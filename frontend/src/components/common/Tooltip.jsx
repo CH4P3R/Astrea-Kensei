@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import useTooltipPosition from '../../hooks/useTooltipPosition.js'
 
 export default function Tooltip({ children, message, tone = 'info', open, compact = false, inline = false,
-  placement = 'top', id, point, hoverOnly = false }) {
+  placement = 'top', id, point, hoverOnly = false, dismissOnClick = false }) {
   const generatedId = useId()
   const tooltipId = id ?? generatedId
   const anchorRef = useRef(null)
@@ -45,7 +45,14 @@ export default function Tooltip({ children, message, tone = 'info', open, compac
     onPointerLeave={() => setHovered(false)}
     onFocus={() => { if (!hoverOnly) { setFocused(true); setDismissed(false) } }}
     onBlur={() => setFocused(false)}
-    onClick={() => { if (!hoverOnly) setDismissed(false) }}
+    onClick={() => {
+      if (dismissOnClick) {
+        setDismissed(true)
+        // Keep DOM focus for keyboard navigation without pinning the tooltip
+        // to the focus left behind by this activation.
+        setFocused(false)
+      } else if (!hoverOnly) setDismissed(false)
+    }}
     onKeyDown={(event) => { if (event.key === 'Escape') setDismissed(true) }}>
     {cloneElement(children, { 'aria-describedby': describedBy })}
     {bubble}

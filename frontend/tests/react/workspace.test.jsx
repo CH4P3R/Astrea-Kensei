@@ -4,13 +4,16 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import AppWorkspace from '../../src/components/layout/AppWorkspace.jsx'
 import AppViewport from '../../src/components/layout/AppViewport.jsx'
 import I18nProvider from '../../src/i18n/I18nProvider.jsx'
+import { languageStorageKey } from '../../src/i18n/core.js'
+import { groundOpacityStorageKey } from '../../src/hooks/useGroundOpacity.js'
 import { loadMetadata, loadPixels, loadProjection, searchCoordinates, searchImages } from '../../src/services/images.js'
 
-const scene = vi.hoisted(() => ({ fits: null, observerAvailable: true }))
+const scene = vi.hoisted(() => ({ fits: null, sky: null, observerAvailable: true }))
 vi.mock('@react-three/fiber', () => ({ Canvas: ({ children }) => <>{children}</> }))
 vi.mock('../../src/three/core/SkyScene.jsx', () => ({
-  default: function Scene({ fits, onSkyClick }) {
+  default: function Scene({ fits, onSkyClick, skyGuides, surfaceVisible, groundOpacity, dustVisible, observer }) {
     scene.fits = fits
+    scene.sky = { guides: skyGuides, surfaceVisible, groundOpacity, dustVisible, observer }
     const { setTextureLimit } = fits
     useEffect(() => { setTextureLimit(4096) }, [setTextureLimit])
     return <button onClick={() => onSkyClick({ x: 1, y: 0, z: 0 }, { x: 20, y: 20 })}>sky click</button>
@@ -27,6 +30,7 @@ vi.mock('../../src/hooks/useSkyClock.js', () => {
   return { default: () => clock }
 })
 vi.mock('../../src/hooks/useStars.js', () => ({ default: () => ({ status: 'idle', snapshot: null }) }))
+vi.mock('../../src/hooks/useSolarSystem.js', () => ({ default: () => ({ status: 'idle', snapshot: null, error: '', retry() {} }) }))
 vi.mock('../../src/hooks/useImageViewport.js', () => ({ default: () => ({}) }))
 vi.mock('../../src/hooks/useImageComparison.js', () => ({
   default: () => ({ status: 'idle', observations: [], candidates: [], images: [], year: 2026, sameDetector: false }),
@@ -67,7 +71,10 @@ const flush = () => act(async () => {})
 const input = (name) => document.querySelector(`input[name="${name}"]`)
 const sizeInput = () => document.querySelector('#context-search input[type="range"]')
 const click = (name) => fireEvent.click(screen.getByRole('button', { name, exact: true }))
-const openSearch = () => click('Preparation')
+const openSearch = () => {
+  const trigger = screen.getByRole('button', { name: 'Preparation', exact: true })
+  if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger)
+}
 const edit = (ra, dec) => {
   fireEvent.change(input('ra'), { target: { value: String(ra) } })
   fireEvent.change(input('dec'), { target: { value: String(dec) } })
@@ -88,6 +95,7 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(function () { return this.parentElement })
   window.localStorage.clear()
   scene.fits = null
+  scene.sky = null
   scene.observerAvailable = true
   searchCoordinates.mockImplementation(async (ra, dec) => result(ra, dec))
   searchImages.mockResolvedValue(result(30, 40))
@@ -113,6 +121,164 @@ it('opens directly into an interactive workspace on the first visit', () => {
   openSearch()
   expect(screen.getByRole('button', { name: 'Preparation' }).getAttribute('aria-expanded')).toBe('true')
   expect(searchCoordinates).not.toHaveBeenCalled()
+})
+
+it('dismisses sidebar tooltips after toggling panels without losing button focus', () => {
+  mount()
+  const trigger = screen.getByRole('button', { name: 'Time', exact: true })
+  const tooltip = document.getElementById(trigger.getAttribute('aria-describedby'))
+  fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+  act(() => trigger.focus())
+  expect(tooltip.dataset.open).toBe('true')
+  fireEvent.click(trigger)
+  expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  fireEvent.click(trigger)
+  expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  expect(tooltip.dataset.open).toBe('false')
+  expect(document.activeElement).toBe(trigger)
+  fireEvent.pointerLeave(trigger, { pointerType: 'mouse' })
+  expect(tooltip.dataset.open).toBe('false')
+
+  // A new hover may show the name, but retained click focus must not pin it.
+  fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+  expect(tooltip.dataset.open).toBe('true')
+  fireEvent.pointerLeave(trigger, { pointerType: 'mouse' })
+  expect(tooltip.dataset.open).toBe('false')
+  act(() => trigger.blur())
+  act(() => trigger.focus())
+  expect(tooltip.dataset.open).toBe('true')
+  fireEvent.keyDown(trigger, { key: 'Escape' })
+  expect(tooltip.dataset.open).toBe('false')
+  expect(trigger.getAttribute('aria-expanded')).toBe('false')
+})
+
+it('does not revive a clicked sidebar tooltip when a different panel opens', () => {
+  mount()
+  const first = screen.getByRole('button', { name: 'Time', exact: true })
+  const second = screen.getByRole('button', { name: 'Location', exact: true })
+  const bubble = (button) => document.getElementById(button.getAttribute('aria-describedby'))
+  act(() => first.focus())
+  fireEvent.click(first, { detail: 0 })
+  expect(bubble(first).dataset.open).toBe('false')
+  act(() => second.focus())
+  expect(bubble(second).dataset.open).toBe('true')
+  fireEvent.click(second, { detail: 0 })
+  expect(first.getAttribute('aria-expanded')).toBe('false')
+  expect(second.getAttribute('aria-expanded')).toBe('true')
+  expect(bubble(first).dataset.open).toBe('false')
+  fireEvent.click(second, { detail: 0 })
+  expect(bubble(second).dataset.open).toBe('false')
+})
+
+it('independently controls celestial guides and retains them while visiting other panels', () => {
+  mount()
+  click('Sky appearance')
+  const checkbox = (name) => screen.getByRole('checkbox', { name, exact: true })
+  expect(checkbox('Constellations (88)').checked).toBe(true)
+  expect(checkbox('Ecliptic').checked).toBe(false)
+  expect(checkbox('RA/Dec grid').checked).toBe(false)
+  const background = { surfaceVisible: scene.sky.surfaceVisible, dustVisible: scene.sky.dustVisible }
+
+  fireEvent.click(checkbox('Ecliptic'))
+  expect(scene.sky.guides).toEqual({ constellations: true, ecliptic: true, equatorial: false })
+  fireEvent.click(checkbox('RA/Dec grid'))
+  expect(scene.sky.guides).toEqual({ constellations: true, ecliptic: true, equatorial: true })
+  fireEvent.click(checkbox('Constellations (88)'))
+  expect(scene.sky.guides).toEqual({ constellations: false, ecliptic: true, equatorial: true })
+  expect(scene.sky).toMatchObject(background)
+
+  click('Time')
+  expect(screen.queryByRole('checkbox', { name: 'Ecliptic', exact: true })).toBeNull()
+  click('Sky appearance')
+  expect(checkbox('Constellations (88)').checked).toBe(false)
+  expect(checkbox('Ecliptic').checked).toBe(true)
+  expect(checkbox('RA/Dec grid').checked).toBe(true)
+
+  fireEvent.click(checkbox('Show central surface'))
+  fireEvent.click(checkbox('Diffuse background'))
+  expect(scene.sky.surfaceVisible).toBe(!background.surfaceVisible)
+  expect(scene.sky.dustVisible).toBe(!background.dustVisible)
+  expect(scene.sky.guides).toEqual({ constellations: false, ecliptic: true, equatorial: true })
+  fireEvent.click(checkbox('Ecliptic'))
+  expect(scene.sky.guides).toEqual({ constellations: false, ecliptic: false, equatorial: true })
+  expect(searchCoordinates).not.toHaveBeenCalled()
+  expect(searchImages).not.toHaveBeenCalled()
+})
+
+it.each([0, 0.73, 1])('restores ground darkness %s after the workspace is reloaded', (opacity) => {
+  const first = mount()
+  click('Sky appearance')
+  const slider = screen.getByRole('slider', { name: 'Ground darkness', exact: true })
+  fireEvent.change(slider, { target: { value: String(opacity) } })
+  first.unmount()
+  mount()
+  click('Sky appearance')
+  expect(screen.getByRole('slider', { name: 'Ground darkness', exact: true }).value).toBe(String(opacity))
+  expect(scene.sky.groundOpacity).toBe(opacity)
+})
+
+it('falls back from an invalid saved ground preference without breaking the controls', () => {
+  window.localStorage.setItem(groundOpacityStorageKey, 'NaN')
+  mount()
+  click('Sky appearance')
+  const slider = screen.getByRole('slider', { name: 'Ground darkness', exact: true })
+  expect(slider.value).toBe('0.22')
+  fireEvent.change(slider, { target: { value: '0.61' } })
+  expect(scene.sky.groundOpacity).toBe(0.61)
+  expect(window.localStorage.getItem(groundOpacityStorageKey)).toBe('0.61')
+})
+
+it('keeps ground darkness adjustable when browser storage is blocked', () => {
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('Storage blocked') })
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('Storage blocked') })
+  mount()
+  click('Sky appearance')
+  const slider = screen.getByRole('slider', { name: 'Ground darkness', exact: true })
+  expect(slider.value).toBe('0.22')
+  fireEvent.change(slider, { target: { value: '0.57' } })
+  expect(scene.sky.groundOpacity).toBe(0.57)
+  expect(slider.value).toBe('0.57')
+})
+
+it('explains why guides require a location and enables them when an observer becomes available', () => {
+  scene.observerAvailable = false
+  const { rerender } = mount()
+  click('Sky appearance')
+  const guideNames = ['Constellations (88)', 'Ecliptic', 'RA/Dec grid']
+  const reason = screen.getByText('Set your position in Location to orient these guides in your sky.')
+  for (const name of guideNames) {
+    const checkbox = screen.getByRole('checkbox', { name, exact: true })
+    expect(checkbox.disabled).toBe(true)
+    expect(checkbox.getAttribute('aria-describedby').split(' ')).toContain(reason.id)
+  }
+  expect(screen.getByRole('checkbox', { name: 'Show central surface' }).disabled).toBe(false)
+  expect(screen.getByRole('checkbox', { name: 'Diffuse background' }).disabled).toBe(false)
+  expect(scene.sky.observer).toBeFalsy()
+
+  scene.observerAvailable = true
+  rerender(<I18nProvider><AppWorkspace /></I18nProvider>)
+  expect(screen.queryByText(reason.textContent)).toBeNull()
+  for (const name of guideNames) {
+    expect(screen.getByRole('checkbox', { name, exact: true }).disabled).toBe(false)
+  }
+  expect(scene.sky.observer).toMatchObject({ latitude: 51, longitude: 0 })
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Ecliptic', exact: true }))
+  expect(scene.sky.guides).toEqual({ constellations: true, ecliptic: true, equatorial: false })
+})
+
+it('offers the celestial guides and their explanatory help in Spanish', () => {
+  window.localStorage.setItem(languageStorageKey, 'es')
+  mount()
+  click('Aspecto del cielo')
+  for (const name of ['Constelaciones (88)', 'Eclíptica', 'Cuadrícula RA/Dec']) {
+    expect(screen.getByRole('checkbox', { name, exact: true }).disabled).toBe(false)
+  }
+  const help = screen.getByRole('button', { name: 'Información sobre Eclíptica', exact: true })
+  fireEvent.focus(help)
+  const tooltip = document.getElementById(help.getAttribute('aria-describedby'))
+  expect(tooltip.getAttribute('role')).toBe('tooltip')
+  expect(tooltip.dataset.open).toBe('true')
+  expect(tooltip.textContent).toContain('Su inclinación respecto al horizonte cambia con tu ubicación y la hora seleccionada.')
 })
 
 it('loads a shared image and opens the inspector without a device observer', async () => {

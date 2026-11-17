@@ -14,9 +14,36 @@
   "retry": "Volver a cargar estrellas",
   "surface": {
     "label": "Mostrar superficie central",
-    "help": "Cuadrícula horizontal transparente bajo el observador. Se atenúa al mirar hacia abajo y permite explorar el cielo inferior."
+    "help": "Cuadrícula y círculos suaves con un fondo oscuro ajustable. La superficie se atenúa al ampliar.",
+    "darkness": {
+      "label": "Oscuridad del suelo",
+      "help": "Ajusta la oscuridad del fondo sin cambiar la cuadrícula ni los círculos."
+    }
   },
   "dust": { "label": "Fondo difuso" },
+  "solar": {
+    "label": "Sol y Luna",
+    "help": "Posiciones y tamaños angulares calculados para tu ubicación y la hora seleccionada. La Luna muestra su fase e iluminación. No se simula la refracción atmosférica.",
+    "loading": "Calculando posiciones del Sol y la Luna…",
+    "retry": "Actualizar Sol y Luna",
+    "invalid": "No se pudieron interpretar las posiciones del Sol y la Luna. Vuelve a intentarlo.",
+    "expired": "Las posiciones del Sol y la Luna han caducado. Actualízalas para continuar."
+  },
+  "guides": {
+    "locationRequired": "Define tu ubicación en Ubicación para orientar estas guías en tu cielo.",
+    "constellations": {
+      "label": "Constelaciones (88)",
+      "help": "Líneas de las 88 constelaciones y nombres de las figuras hacia las que miras. Se orientan según tu ubicación y la hora seleccionada."
+    },
+    "ecliptic": {
+      "label": "Eclíptica",
+      "help": "Trayectoria aparente anual del Sol. Su inclinación respecto al horizonte cambia con tu ubicación y la hora seleccionada."
+    },
+    "equatorial": {
+      "label": "Cuadrícula RA/Dec",
+      "help": "Ascensión recta en horas y declinación en grados, con referencia J2000. La cuadrícula gira con el cielo."
+    }
+  },
   "directions": {
     "north": { "name": "Norte", "short": "N" },
     "east": { "name": "Este", "short": "E" },

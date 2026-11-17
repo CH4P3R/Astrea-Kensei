@@ -11,8 +11,13 @@ import Stars from '../elements/Stars.jsx'
 import HorizonSurface from '../elements/HorizonSurface.jsx'
 import ImageLoadingMarker from '../elements/ImageLoadingMarker.jsx'
 import CompassTracking from './CompassTracking.jsx'
+import ConstellationLines from '../elements/ConstellationLines.jsx'
+import Ecliptic from '../elements/Ecliptic.jsx'
+import EquatorialGrid from '../elements/EquatorialGrid.jsx'
+import SolarSystem from '../elements/SolarSystem.jsx'
+import ConstellationNames from '../elements/ConstellationNames.jsx'
 
-export default function SkyScene({ observer, fits, stars, surfaceVisible, dustVisible, timestamp, onSkyClick,
+export default function SkyScene({ observer, fits, stars, solarSystem, surfaceVisible, groundOpacity, dustVisible, skyGuides = {}, timestamp, onSkyClick,
   frameImages, viewport, focusVersion, layers, appearance, frameId, onImageZoom, searchDirection, compassMarkerRef }) {
   const { gl } = useThree()
   const { setTextureLimit } = fits
@@ -25,7 +30,6 @@ export default function SkyScene({ observer, fits, stars, surfaceVisible, dustVi
         previewActive={Boolean(fits.active)} selectionPending={['searching', 'loading', 'results'].includes(fits.status)}
         focusRequest={fits.focus} timestamp={timestamp} selectionDirection={searchDirection} />
       <CompassTracking markerRef={compassMarkerRef} />
-      {stars.snapshot && <Stars snapshot={stars.snapshot} timestamp={timestamp} />}
       <ImageLoadingMarker direction={searchDirection} status={fits.status} />
       {layers.map(({ image, pixels, ready }) => image && pixels && <FitsImage key={image.metadata.id}
         active={image} timestamp={timestamp} pixels={pixels} settings={appearance.settings}
@@ -35,8 +39,14 @@ export default function SkyScene({ observer, fits, stars, surfaceVisible, dustVi
         <EquatorialFrame observer={observer} timestamp={timestamp}>
           <CelestialSphere />
           {dustVisible && <SkyDust />}
+          {observer && skyGuides.constellations && <ConstellationLines />}
+          {observer && skyGuides.constellations && <ConstellationNames />}
+          {observer && skyGuides.ecliptic && <Ecliptic timestamp={timestamp} />}
+          {observer && skyGuides.equatorial && <EquatorialGrid />}
         </EquatorialFrame>
-        {surfaceVisible && <HorizonSurface />}
+        {stars.snapshot && <Stars snapshot={stars.snapshot} timestamp={timestamp} />}
+        {solarSystem?.snapshot && <SolarSystem snapshot={solarSystem.snapshot} timestamp={timestamp} />}
+        {surfaceVisible && <HorizonSurface groundOpacity={groundOpacity} />}
         <HorizonDirections />
       </SkyBackdrop>
     </>

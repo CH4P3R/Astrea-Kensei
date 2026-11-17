@@ -1,0 +1,5 @@
+.sky-guide-option { display: flex; align-items: center; gap: 4px; }
+.sky-guide-option .checkbox-field { flex: 1; min-width: 0; }
+.sky-guide-option .input-help { flex-shrink: 0; }
+.sky-guide-option .checkbox-field:has(input:disabled) { opacity: 0.5; cursor: default; }
+.sky-guide-option input:disabled { cursor: default; }

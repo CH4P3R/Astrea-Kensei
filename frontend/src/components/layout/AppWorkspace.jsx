@@ -6,11 +6,13 @@ import ContextToolbar from '../controls/ContextToolbar.jsx'
 import useSkyClock from '../../hooks/useSkyClock.js'
 import useFitsImage from '../../hooks/useFitsImage.js'
 import useContextMenu from '../../hooks/useContextMenu.js'
+import useGroundOpacity from '../../hooks/useGroundOpacity.js'
 import Tooltip from '../common/Tooltip.jsx'
 import StatusNotice from '../common/StatusNotice.jsx'
 import { cutoutSizeError } from '../../config/search.js'
 import { SKY_DUST } from '../../config/skyDust.js'
 import useStars from '../../hooks/useStars.js'
+import useSolarSystem from '../../hooks/useSolarSystem.js'
 import useTranslation from '../../i18n/useTranslation.js'
 import LanguageSelect from '../controls/LanguageSelect.jsx'
 import ImageInspector from './ImageInspector.jsx'
@@ -41,6 +43,8 @@ export default function AppWorkspace({ onOpenAbout }) {
   const { shareHref } = skyUrl
   const getShareHref = useCallback(() => shareHref(committed), [shareHref, committed])
   const share = { getHref: getShareHref, disabled: !committed || commitPending }
+  const [solarVisible, setSolarVisible] = useState(true)
+  const solarSystem = useSolarSystem(location.observer, clock.context, clock.timestamp, solarVisible)
   const stars = useStars(location.observer, clock.context, clock.timestamp)
   const starsNotice = useMemo(() => stars.status === 'loading' && !stars.snapshot
     ? { status: 'loading', message: 'sky.status.loadingNotice', icon: 'star' } : null,
@@ -48,7 +52,9 @@ export default function AppWorkspace({ onOpenAbout }) {
   const historyNotice = useMemo(() => skyUrl.warning === 'share.notices.history'
     ? { status: 'error', message: skyUrl.warning } : null, [skyUrl.warning])
   const [surfaceVisible, setSurfaceVisible] = useState(true)
+  const [groundOpacity, setGroundOpacity] = useGroundOpacity()
   const [dustVisible, setDustVisible] = useState(SKY_DUST.enabled)
+  const [skyGuides, setSkyGuides] = useState({ constellations: true, ecliptic: false, equatorial: false })
   const [notice, setNotice] = useState(null)
   const [tab, setTab] = useState('data')
   const [focusVersion, setFocusVersion] = useState(0)
@@ -56,11 +62,7 @@ export default function AppWorkspace({ onOpenAbout }) {
   const [pendingRegion, setPendingRegion] = useState(null)
   const activeId = fits.active?.metadata.id
   const inspectorOpen = Boolean(activeId)
-  const searchPending = fits.preparing || (!fits.active && ['searching', 'loading', 'results', 'error'].includes(fits.status))
-  const menu = useContextMenu({ persistentIds: [
-    ...(searchPending ? ['search'] : []),
-    ...(location.status === 'loading' ? ['location'] : []),
-  ] })
+  const menu = useContextMenu()
   const { observer } = location
   const comparison = useImageComparison(fits.active, inspectorOpen && tab === 'compare', observer, clock.context, fits.textureLimit)
   const baseProjection = useProjectedImage(fits.active, observer, clock.context, clock.timestamp)
@@ -134,7 +136,8 @@ export default function AppWorkspace({ onOpenAbout }) {
       data-inspector-open={inspectorOpen} aria-label={t('common.viewport')}>
       <div className="scene-layer" aria-label={t('common.scene')}>
         <Canvas orthographic camera={{ position: [0, 0, 0], near: 0.01, far: 250 }}>
-          <SkyScene observer={observer} fits={fits} stars={stars} surfaceVisible={surfaceVisible} dustVisible={dustVisible}
+          <SkyScene observer={observer} fits={fits} stars={stars} solarSystem={solarSystem} surfaceVisible={surfaceVisible} dustVisible={dustVisible} skyGuides={skyGuides}
+            groundOpacity={groundOpacity}
             timestamp={clock.timestamp} onSkyClick={onSkyClick} frameImages={frameImages} viewport={viewport} focusVersion={focusVersion}
             layers={layers} appearance={appearance} frameId={playback.frameId}
             onImageZoom={tab === 'compare' ? undefined : fits.refine}
@@ -144,7 +147,10 @@ export default function AppWorkspace({ onOpenAbout }) {
       <div className="ui-layer">
         <ContextToolbar clock={clock} location={location} fits={fits} menu={menu} warning={skyUrl.warning} share={share}
           stars={stars} surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
+          groundOpacity={groundOpacity} setGroundOpacity={setGroundOpacity}
           dustVisible={dustVisible} setDustVisible={setDustVisible}
+          skyGuides={skyGuides} setSkyGuides={setSkyGuides}
+          solarSystem={solarSystem} solarVisible={solarVisible} setSolarVisible={setSolarVisible}
           compassMarkerRef={compassMarkerRef} />
         <LanguageSelect onOpenAbout={onOpenAbout ? () => { playback.pause(); onOpenAbout() } : undefined} />
         <ImageInspector open={inspectorOpen} tab={tab} fits={fits} displayed={displayed} appearance={appearance}

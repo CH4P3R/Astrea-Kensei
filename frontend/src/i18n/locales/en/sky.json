@@ -14,9 +14,36 @@
   "retry": "Reload stars",
   "surface": {
     "label": "Show central surface",
-    "help": "A transparent horizontal grid beneath the observer. It fades when looking down and lets you explore the lower sky."
+    "help": "A subtle grid and rings with an adjustable dark background. The surface fades when zooming in.",
+    "darkness": {
+      "label": "Ground darkness",
+      "help": "Adjust the background darkness without changing the grid or rings."
+    }
   },
   "dust": { "label": "Diffuse background" },
+  "solar": {
+    "label": "Sun and Moon",
+    "help": "Positions and angular sizes calculated for your location and the selected time. The Moon shows its phase and lighting. Atmospheric refraction is not simulated.",
+    "loading": "Calculating Sun and Moon positions…",
+    "retry": "Refresh Sun and Moon",
+    "invalid": "The Sun and Moon positions could not be read. Please try again.",
+    "expired": "The Sun and Moon positions have expired. Refresh them to continue."
+  },
+  "guides": {
+    "locationRequired": "Set your position in Location to orient these guides in your sky.",
+    "constellations": {
+      "label": "Constellations (88)",
+      "help": "Lines for all 88 constellations and names of the figures you are looking toward. They follow your location and the selected time."
+    },
+    "ecliptic": {
+      "label": "Ecliptic",
+      "help": "The Sun's apparent yearly path. Its tilt relative to the horizon changes with your location and the selected time."
+    },
+    "equatorial": {
+      "label": "RA/Dec grid",
+      "help": "Right ascension in hours and declination in degrees, referenced to J2000. The grid rotates with the sky."
+    }
+  },
   "directions": {
     "north": { "name": "North", "short": "N" },
     "east": { "name": "East", "short": "E" },

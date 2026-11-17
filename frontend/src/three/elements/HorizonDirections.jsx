@@ -68,10 +68,10 @@ function DirectionLabel({ name, short, position }) {
 
   return (
     <group position={position}>
-      <sprite ref={full} raycast={ignoreRaycast}>
+      <sprite ref={full} raycast={ignoreRaycast} renderOrder={4}>
         <spriteMaterial transparent depthWrite={false} toneMapped={false} opacity={0} />
       </sprite>
-      <sprite ref={initial} raycast={ignoreRaycast}>
+      <sprite ref={initial} raycast={ignoreRaycast} renderOrder={4}>
         <spriteMaterial transparent depthWrite={false} toneMapped={false} opacity={0} />
       </sprite>
     </group>

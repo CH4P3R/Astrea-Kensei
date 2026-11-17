@@ -6,7 +6,7 @@
 
 La guía establece los patrones que deben extenderse a los siguientes flujos. Se complementa con [desing.md](../desing.md) y la [arquitectura](FRONTEND_ARCHITECTURE.md). Para la presentación e interacción del HUD, estas decisiones actualizan las referencias históricas del [flujo del prototipo](PROTOTYPE_UI_FLOW.md).
 
-Aspecto del cielo muestra el estado del catálogo estelar y permite ocultar la superficie central. Preparación permite buscar directamente al pulsar el cielo o introduciendo RA/Dec. Al ampliar la UI, representar únicamente capacidades reales del frontend y de la API.
+Aspecto del cielo muestra el estado del catálogo estelar y controla la superficie central, el fondo difuso, el Sol y la Luna y las guías celestes. Preparación permite buscar directamente al pulsar el cielo o introduciendo RA/Dec. Al ampliar la UI, representar únicamente capacidades reales del frontend y de la API.
 
 ## 2. Composición del HUD
 
@@ -44,38 +44,27 @@ La referencia visual inicial se adaptó a una escena negra. Se emplean superfici
 - Las flechas de anclaje son parte de la superficie del panel o del tooltip. Que se construyan con bordes CSS no implica dibujar un contorno decorativo.
 - Los valores reutilizados se mantienen en variables CSS. Las variables globales de movimiento y scroll están en `src/styles/base/variables.css`; los valores propios del HUD, en su hoja de componente.
 
-## 4. Apertura, cierre y permanencia por tarea
+## 4. Apertura y cierre por clic
 
-### Comportamiento temporal
+### Interacción con la barra
 
 | Interacción | Decisión |
 | --- | --- |
-| Hover o foco sobre un icono principal | Mostrar su tooltip sin espera intencional |
-| Hover sobre una opción | Abrir su panel tras 350 ms |
-| Clic en una opción | Abrirla directamente; pulsarla de nuevo no cierra el panel |
-| Salida de la barra y del panel | Permitir el cierre después de 2.000 ms |
-| Regreso antes del cierre | Cancelar el temporizador de cierre |
-| Paso del ratón entre barra y panel | Tolerar el recorrido; no cerrar instantáneamente al cruzar el espacio intermedio |
+| Hover o foco sobre un icono principal | Mostrar solo su tooltip; no abrir ni cambiar paneles |
+| Clic en una opción cerrada | Abrir su panel |
+| Clic en la opción que ya está abierta | Cerrar su panel |
+| Clic en otra opción | Cambiar directamente a ese panel |
+| Salida de la barra o del panel, o pérdida de foco | Conservar el panel abierto |
 
-El retardo de interacción y la duración de una animación son parámetros distintos. El tooltip inicia su aparición inmediatamente y se anima durante 140 ms.
+No existen temporizadores de apertura o cierre. Los botones nativos también permiten activar la opción mediante Enter o Espacio. El tooltip conserva su animación de 140 ms, independiente de la visibilidad del panel.
 
-### Permanencia mientras falta una acción
+Activar una opción descarta su tooltip mediante `dismissOnClick`, tanto al abrir como al cerrar el panel. El foco del botón se conserva para navegar con teclado, pero no mantiene el globo visible. Una nueva entrada del puntero o un nuevo foco puede mostrarlo otra vez; los tooltips de ayuda y de acciones bloqueadas conservan su comportamiento habitual.
 
-Un panel no puede ocultarse automáticamente solo porque el usuario mueve el ratón para completar una tarea fuera de él.
+### Tareas y aperturas programáticas
 
-La persistencia se decide por el estado de la función, mediante `persistentIds` de `useContextMenu`:
+Cerrar un panel o cambiar de opción no cancela su tarea ni borra sus valores. El usuario puede volver a abrirlo para continuar o cancelar una operación mediante su control específico.
 
-| Panel / estado | Comportamiento actual |
-| --- | --- |
-| Preparación: edición de coordenadas manuales | Permanece abierto |
-| Preparación: búsqueda o carga en curso | Permanece abierto y conserva la cancelación accesible |
-| Preparación: observación pendiente de carga, resultado vacío o error | Permanece abierto para permitir continuar, revisar o limpiar |
-| Ubicación: solicitud al dispositivo en curso | Permanece abierto |
-| Tarea completada o cancelada | Deja de exigir persistencia y permite el cierre temporal |
-
-Mientras el panel activo es persistente, hacer hover sobre otro icono no lo sustituye. Un clic explícito en otra opción sí permite cambiar de contexto. La persistencia conserva la tarea, no bloquea la navegación voluntaria.
-
-Para un flujo nuevo, definir primero qué estado requiere atención, qué acción lo completa y cómo se cancela. No utilizar un cierre genérico por hover para todas las funciones.
+`useContextMenu` distingue `toggle(id)`, usado por los botones de la barra, de `open(id)`, usado por los flujos de búsqueda y restauración. Las aperturas programáticas son idempotentes: pedir que se abra Preparación cuando ya está abierta no la cierra. Al cargar una imagen se conserva el paso al inspector y el cierre del panel izquierdo.
 
 El tamaño del recorte es un parámetro de aplicación inmediata: modificarlo no inicia una tarea pendiente ni requiere un botón de confirmación. El clic válido en la escena abre Preparación automáticamente para mantener accesibles la cancelación y los resultados; el progreso se muestra en el aviso superior derecho.
 
@@ -198,14 +187,22 @@ La búsqueda mediante un punto del cielo utiliza `POST /api/v1/images/search` y 
 - El aviso se descarta con Escape o con otro clic. El gesto de arrastre no debe iniciar una consulta.
 - Obtener la ubicación después de una búsqueda manual no debe borrar sus resultados.
 
-### Estrellas y superficie central
+### Estrellas, Sol y Luna, superficie central y guías celestes
 
 - Las estrellas Hipparcos se cargan al disponer de ubicación y se actualizan con el contexto de Tiempo. El encabezado de Aspecto del cielo informa de carga, disponibilidad y cantidad.
 - Un fallo de carga o actualización muestra el error y la acción «Volver a cargar estrellas». Las direcciones caducadas no se muestran.
-- «Mostrar superficie central» es un checkbox nativo de aplicación inmediata, activado por defecto. Oculta o muestra la guía horizontal transparente situada bajo el observador, formada por cuadrícula y anillos.
-- La superficie es atravesable y permite ver el hemisferio inferior. No intercepta clics ni restringe la cámara. Su visibilidad es independiente de la ubicación y de la carga de estrellas.
-- La guía sigue el suelo del prototipo de referencia: plano en Y = −1, detalle atenuado por distancia y menor opacidad al mirar hacia abajo. Se adapta a la proyección ortográfica mediante las direcciones del cielo y solo aparece bajo el horizonte. No se debe volver a forzar la profundidad de un disco relleno, porque produce superposiciones al girar.
-- Al ampliar, cuadrícula, anillos y marcas compensan su grosor con el inverso del zoom y se desvanecen suavemente entre 1× y 8×. Desde 8× quedan ocultos para facilitar la inspección de FITS; reaparecen al alejar la vista. Esta adaptación es automática y respeta el control de visibilidad.
+- «Sol y Luna» comienza activado y requiere ubicación. Ambos siguen el reloj de la aplicación: se mueven en modo En vivo y se sitúan en la fecha seleccionada al pausar. Su carga no depende del catálogo de estrellas; los fallos tienen un reintento propio y las posiciones caducadas se ocultan.
+- Las posiciones y tamaños angulares se calculan para el observador con las efemérides integradas de Astropy, conservando la distancia para incluir la paralaje lunar. La Luna muestra una iluminación aproximada orientada hacia el Sol. No se simulan refracción atmosférica, eclipses ni brillo diurno del cielo.
+- El servidor envía muestras cada 10 segundos para una ventana de dos minutos. `useSolarSystem` renueva aproximadamente cada 90 segundos y el renderizador interpola entre muestras; no hay peticiones por fotograma. Los dos discos usan sombreadores procedurales, sin texturas ni modelos descargados.
+- «Mostrar superficie central» es un checkbox nativo de aplicación inmediata, activado por defecto. Conserva la guía transparente original: cuadrícula, anillos, ejes y retícula central. Las líneas tienen un gris ligeramente azulado y contraste suave; la cuadrícula secundaria se atenúa antes que los anillos para reducir la carga visual. Un fondo negro comienza al 22 % y se ajusta con «Oscuridad del suelo»: un `RangeField` de 0 a 100 %, con pasos de un punto porcentual, porcentaje visible y valor accesible. El control cambia solo el fondo, de opacidad uniforme hasta el horizonte real, sin degradado vertical y atenuado con el zoom, sin alterar el brillo de las líneas. No añadir paisaje ni textura de terreno.
+- La guía ocupa únicamente el hemisferio inferior; la oscuridad elegida determina cuánto cielo se ve a través del fondo. No intercepta clics ni restringe la cámara; se dibuja detrás de las imágenes FITS y puede desactivarse. Su visibilidad es independiente de la ubicación y de la carga de estrellas. El deslizador se deshabilita al ocultar la superficie y conserva su valor al volver a mostrarla o cerrar el panel. `useGroundOpacity` guarda la preferencia en `localStorage` bajo `astrea.groundOpacity` y la restaura al recargar. Si no hay un valor válido entre 0 y 1, utiliza 22 %; si el almacenamiento no está disponible, el control sigue funcionando en memoria.
+- Una semiesfera de baja resolución y un único sombreador sin texturas ni luces conservan un coste reducido. Las líneas se suavizan por píxel y se ocultan cuando su separación es demasiado pequeña. Se mantienen la reducción de opacidad al mirar abajo y el desvanecimiento entre zoom 1× y 8× del diseño original.
+- «Constelaciones (88)», «Eclíptica» y «Cuadrícula RA/Dec» son controles independientes de aplicación inmediata. Las constelaciones comienzan activadas; la eclíptica y la cuadrícula, desactivadas. La selección se conserva durante la sesión al cerrar paneles o cambiar ubicación y hora.
+- Las tres guías requieren una ubicación para orientarse respecto al horizonte. Hasta disponer de ella, sus controles están deshabilitados y el panel explica cómo habilitarlos. Las guías no dependen de que termine la descarga de estrellas.
+- Las figuras de las constelaciones son un catálogo local de líneas entre estrellas, incluidas las constelaciones no zodiacales. No representan límites oficiales de regiones del cielo.
+- El mismo control muestra los nombres oficiales latinos de las constelaciones hacia las que apunta la cámara. Se priorizan los más cercanos al centro, con un máximo de ocho sin solapamiento, tamaño de texto fijo y desvanecimiento entre zoom 6× y 20×. Serpens tiene anclas para Caput y Cauda. Un único atlas generado localmente y una llamada de dibujo instanciada evitan crear un elemento DOM o una textura por nombre.
+- La cuadrícula usa coordenadas J2000, con ascensión recta en horas y declinación en grados. La eclíptica representa el plano medio de fecha de la órbita terrestre. Todas las guías siguen la ubicación y el reloj del cielo mediante el marco ecuatorial compartido; son referencias visuales, no una calibración astrométrica de las imágenes FITS.
+- Las estrellas, cuerpos, líneas y etiquetas se dibujan en la capa de fondo, detrás de las imágenes, y no interceptan clics. Las explicaciones reutilizan `HelpButton` y funcionan con ratón, foco de teclado y pulsación.
 
 ### Navegación de la cámara
 
@@ -300,13 +297,14 @@ Las rutas de esta tabla son relativas a `frontend/`.
 | `src/i18n/` | Catálogos por idioma/sección, proveedor React, formatos locales y errores traducibles |
 | `src/components/common/StatusNotice.jsx` | Aviso reutilizable con `notice` y `duration`, progreso persistente, resultado temporal y salida animada |
 | `src/components/common/StatusIcons.jsx` | Iconos `Loading2Line`, `CheckRounded`, `NoResultsOutlineBold` y `Cancel`, reutilizables y decorativos por defecto |
-| `src/hooks/useContextMenu.js` | Apertura y cierre diferidos; persistencia por `persistentIds` |
+| `src/hooks/useContextMenu.js` | Alternancia por clic y apertura programática idempotente, sin temporizadores |
 | `src/hooks/useAnchoredPanel.js` | Medición, centrado, límites y posición de la flecha |
 | `src/hooks/useTooltipPosition.js` | Posición del tooltip y adaptación al espacio visible |
 | `src/hooks/useSkyClock.js` | Tiempo en vivo, pausa, regreso al presente y aplicación de fecha |
 | `src/hooks/useObserver.js` | Solicitud automática de ubicación, reintento y prioridad de la entrada manual |
 | `src/hooks/useStars.js` | Carga, renovación y cancelación del cielo estelar según ubicación y tiempo |
-| `src/components/controls/SkyControls.jsx` | Estado de las estrellas, reintento y visibilidad de la superficie central |
+| `src/hooks/useSolarSystem.js` | Carga, renovación y cancelación del Sol y la Luna según ubicación, tiempo y visibilidad |
+| `src/components/controls/SkyControls.jsx` | Estado y reintento de estrellas y cuerpos, visibilidad del suelo, fondo y guías |
 | `src/hooks/useFitsImage.js` | Tamaño compartido, filtro de detector, consultas por clic o RA/Dec, carga automática de la observación más reciente y avisos de la operación vigente |
 | `src/config/search.js` | Tamaño inicial de 7 minutos de arco, detectores D1–D6 y validación de tamaño y coordenadas |
 | `src/styles/base/variables.css` | Variables globales de movimiento y scroll |
