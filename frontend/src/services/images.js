@@ -27,22 +27,22 @@ export async function searchImages(context, direction, size, detector, signal) {
   } })).json()
 }
 
-export async function searchCoordinates(ra, dec, size, detector, signal, catalog = 'archive') {
+export async function searchCoordinates(ra, dec, size, detector, signal) {
   const query = new URLSearchParams({ ra_deg: ra, dec_deg: dec, size_deg: size / 60, limit: 1 })
   if (detector) query.set('detector', detector)
-  return (await request(`${catalog === 'onboarding' ? '/onboarding' : ''}?${query}`, { signal })).json()
+  return (await request(`?${query}`, { signal })).json()
 }
 
 export async function loadMetadata(id, signal) {
   return (await request(`/load/${id}`, { signal, body: {} })).json()
 }
 
-export async function searchObservations(query, signal, catalog = 'archive') {
+export async function searchObservations(query, signal) {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== null && value !== '') params.set(key, value)
   }
-  return (await request(`${catalog === 'onboarding' ? '/onboarding' : ''}?${params}`, { signal })).json()
+  return (await request(`?${params}`, { signal })).json()
 }
 
 export async function recropImage(id, sizeDeg, signal) {

@@ -29,7 +29,7 @@ const deferred = () => {
 }
 
 function Probe({ observer: currentObserver = observer, rendererReady = true, options, location }) {
-  const fits = useFitsImage(currentObserver, timeContext, 'archive', options)
+  const fits = useFitsImage(currentObserver, timeContext, options)
   const { setTextureLimit } = fits
   useEffect(() => { if (rendererReady) setTextureLimit(4096) }, [rendererReady, setTextureLimit])
   return <>
@@ -324,7 +324,7 @@ describe('FITS search and loading lifecycle', () => {
     await waitFor(() => expect(requests.filter(({ signal }) => !signal.aborted)).toHaveLength(1))
     const live = requests.find(({ signal }) => !signal.aborted)
     const dispatches = requests.length
-    expect(searchCoordinates).toHaveBeenLastCalledWith(50, -60, 9, 4, live.signal, 'archive')
+    expect(searchCoordinates).toHaveBeenLastCalledWith(50, -60, 9, 4, live.signal)
     await act(async () => live.resolve(result('saved', 50, -60)))
     await status('ready')
     expect(state().committed).toEqual(saved)
@@ -340,7 +340,7 @@ describe('FITS search and loading lifecycle', () => {
     searchCoordinates.mockRejectedValueOnce(new Error('offline'))
     const view = render(<Probe observer={null} options={{ initialSearch: saved, onCommittedChange }} />)
     await status('error')
-    expect(searchCoordinates).toHaveBeenCalledExactlyOnceWith(50, -60, 9, 4, expect.any(AbortSignal), 'archive')
+    expect(searchCoordinates).toHaveBeenCalledExactlyOnceWith(50, -60, 9, 4, expect.any(AbortSignal))
     view.rerender(<Probe options={{ initialSearch: { ...saved }, onCommittedChange }} />)
     await flush()
     expect(searchCoordinates).toHaveBeenCalledTimes(1)

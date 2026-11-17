@@ -31,20 +31,6 @@ def image_availability(query: Annotated[ImageAvailabilityQuery, Query()], servic
     return service.availability(query)
 
 
-@router.get("/onboarding", response_model=ImageSearchResponse)
-def onboarding_images(query: Annotated[ImageSearchQuery, Query()], service: Service):
-    """Query only the two bundled real Barnard observations without contacting IRSA"""
-    return service.onboarding(query)
-
-
-@router.get("/onboarding/{image_id}/fits", response_class=FileResponse)
-def onboarding_fits(image_id: ImageId, service: Service):
-    """Download the verified local FITS used by the guided tour"""
-    service.onboarding_catalog.content(image_id)
-    return FileResponse(service.onboarding_catalog.path(image_id), media_type="application/fits",
-                        filename=service.onboarding_catalog.path(image_id).name)
-
-
 @router.get("/{image_id}", response_model=ImageMetadata)
 def image_metadata(image_id: ImageId, service: Service):
     """Load a selected cutout and return its dimensions, WCS and provenance."""

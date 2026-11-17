@@ -1,0 +1,11 @@
+{
+  "title": "Acerca de Astrea",
+  "description": "Somos el equipo detrás de Astrea, un proyecto para explorar el cielo e imágenes reales de SPHEREx. Combinamos desarrollo de software, análisis de datos, diseño de interfaces, infraestructura y coordinación del proyecto para acercar los datos astronómicos a más personas.",
+  "team": "Nuestro equipo",
+  "photo": "Foto de {{name}}",
+  "profile": "{{name}} en GitHub (se abre en una pestaña nueva)",
+  "repository": "Repositorio público",
+  "repositoryDescription": "Explora el código fuente y el desarrollo de Astrea en GitHub.",
+  "repositoryLink": "Ver el proyecto en GitHub (se abre en una pestaña nueva)",
+  "close": "Cerrar"
+}

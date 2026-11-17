@@ -1,6 +1,7 @@
 """Acceptance targets: file validation, proper-motion propagation and the API route."""
 
 from pathlib import Path
+import re
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
@@ -73,7 +74,7 @@ def test_propagated_position_matches_an_independent_calculation(tmp_path):
 ])
 def test_invalid_files_fail_with_the_path(tmp_path, text):
     path = write(tmp_path, text)
-    with pytest.raises(TargetFileError, match=str(path)):
+    with pytest.raises(TargetFileError, match=re.escape(str(path))):
         load_targets(path)
 
 

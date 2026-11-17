@@ -32,7 +32,7 @@ const deferred = () => {
 }
 
 function Probe({ options, controls = false }) {
-  const fits = useFitsImage(observer, timeContext, 'archive', options)
+  const fits = useFitsImage(observer, timeContext, options)
   return <>
     <output data-testid="state">{JSON.stringify({
       coordinates: fits.coordinates, committed: fits.committed, commitPending: fits.commitPending,
@@ -74,7 +74,7 @@ describe('committed sky searches', () => {
     searchCoordinates.mockReturnValue(deferred().promise)
     mount({ options: { onCommittedChange } })
     click('coordinates')
-    expect(searchCoordinates).toHaveBeenCalledWith(83.63, -5.39, 7, 0, expect.any(AbortSignal), 'archive')
+    expect(searchCoordinates).toHaveBeenCalledWith(83.63, -5.39, 7, 0, expect.any(AbortSignal))
     expect(onCommittedChange).toHaveBeenLastCalledWith({ ra: 83.63, dec: -5.39, size: 7, detector: 0 })
     expect(state().committed).toEqual({ ra: 83.63, dec: -5.39, size: 7, detector: 0 })
     expect(state().coordinates).toEqual({ ra: '83.63', dec: '-5.39' })
@@ -119,7 +119,7 @@ describe('committed sky searches', () => {
     await settled()
     click('size20')
     click('d3')
-    expect(searchCoordinates).toHaveBeenLastCalledWith(10, 20, 7, 3, expect.any(AbortSignal), 'archive')
+    expect(searchCoordinates).toHaveBeenLastCalledWith(10, 20, 7, 3, expect.any(AbortSignal))
     expect(state().committed).toEqual({ ra: 10, dec: 20, size: 7, detector: 3 })
     expect(onCommittedChange).toHaveBeenLastCalledWith({ ra: 10, dec: 20, size: 7, detector: 3 })
     expect(onCommittedChange).toHaveBeenCalledTimes(2)
@@ -138,7 +138,7 @@ describe('committed sky searches', () => {
       expect(state()).toMatchObject({
         coordinates: { ra: '50', dec: '-60' }, size: 9, detector: 4, committed: restored,
       })
-      expect(searchCoordinates).toHaveBeenLastCalledWith(50, -60, 9, 4, expect.any(AbortSignal), 'archive')
+      expect(searchCoordinates).toHaveBeenLastCalledWith(50, -60, 9, 4, expect.any(AbortSignal))
       await settled()
     }
     expect(searchCoordinates).toHaveBeenCalledTimes(2)
@@ -247,22 +247,8 @@ describe('committed sky searches', () => {
     expect(state().preparing).toBe(true)
     expect(onCommittedChange).not.toHaveBeenCalled()
     fireEvent.submit(ra.form)
-    expect(searchCoordinates).toHaveBeenCalledWith(83.63, -5.39, 7, 0, expect.any(AbortSignal), 'archive')
+    expect(searchCoordinates).toHaveBeenCalledWith(83.63, -5.39, 7, 0, expect.any(AbortSignal))
     expect(state().committed).toEqual({ ra: 83.63, dec: -5.39, size: 7, detector: 0 })
     await settled()
-  })
-
-  it('shows tutorial coordinates without a commit or automatic search and restores initial drafts', () => {
-    mount({ controls: true, options: { initialCoordinates: { ra: 269.4463, dec: 4.7679 } } })
-    expect(document.querySelector('input[name="ra"]').value).toBe('269.4463')
-    expect(document.querySelector('input[name="dec"]').value).toBe('4.7679')
-    click('editRa')
-    click('size20')
-    click('cancelPreparation')
-    expect(state()).toMatchObject({
-      coordinates: { ra: '269.4463', dec: '4.7679' }, size: 7, committed: null,
-    })
-    expect(searchCoordinates).not.toHaveBeenCalled()
-    expect(searchImages).not.toHaveBeenCalled()
   })
 })

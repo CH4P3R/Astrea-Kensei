@@ -3,16 +3,15 @@ import { loadMetadata, loadPixels, loadProjection, observerContext, recropImage,
 import { ANY_DETECTOR, coordinateError, cutoutSizeError, DEFAULT_CUTOUT_SIZE } from '../config/search.js'
 import { decodePixels, validateImage } from '../three/core/imageDataUtils.js'
 import { errorMessage, LocalizedError } from '../i18n/messages.js'
-import { barnardQuery } from '../config/onboarding.js'
 
 const emptyState = { status: 'idle', images: [], error: '', active: null, hasMore: false, query: null, notice: null }
 const coordinateDraft = (point) => ({ ra: point ? String(point.ra) : '', dec: point ? String(point.dec) : '' })
 
-export default function useFitsImage(observer, timeContext, catalog = 'archive', {
-  initialSearch = null, initialCoordinates = null, onCommittedChange = () => {},
+export default function useFitsImage(observer, timeContext, {
+  initialSearch = null, onCommittedChange = () => {},
 } = {}) {
   const [initialDraft] = useState(() => ({
-    coordinates: coordinateDraft(initialSearch ?? initialCoordinates),
+    coordinates: coordinateDraft(initialSearch),
     size: initialSearch?.size ?? DEFAULT_CUTOUT_SIZE,
   }))
   const [state, setState] = useState(emptyState)
@@ -107,7 +106,7 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
     refinement.current?.abort()
     setDetailError('')
     setRefining(false)
-    if (!source || !observer || scale <= 1 || catalog === 'onboarding') { setDetail(null); return }
+    if (!source || !observer || scale <= 1) { setDetail(null); return }
     const job = new AbortController()
     refinement.current = job
     setRefining(true)
@@ -126,7 +125,7 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
     } finally {
       if (!job.signal.aborted) setRefining(false)
     }
-  }, [source, observer, timeContext, catalog])
+  }, [source, observer, timeContext])
 
   useEffect(() => () => {
     if (controller.current?.kind === 'load') controller.current.abort()
@@ -207,13 +206,12 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
         }
         setCommitPending(false)
         const count = result.images.length
-        const message = catalog === 'onboarding' ? count === 0 ? 'onboarding.empty' : 'onboarding.found'
-          : count === 0 ? 'search.notices.empty'
+        const message = count === 0 ? 'search.notices.empty'
           : { key: result.has_more ? 'search.notices.foundMore' : 'search.notices.found', values: { count } }
         setState((previous) => ({ ...previous, status: 'results', images: result.images,
           hasMore: result.has_more, query: result.query, notice: { status: count === 0 ? 'empty' : 'success', message } }))
         const { ra_deg: ra, dec_deg: dec, size_deg: sizeDeg } = result.query
-        lastSearch.current = (chosen, signal) => searchCoordinates(ra, dec, sizeDeg * 60, chosen, signal, catalog)
+        lastSearch.current = (chosen, signal) => searchCoordinates(ra, dec, sizeDeg * 60, chosen, signal)
         if (result.images[0]) {
           if (contextRef.current.observer && maxTextureSize.current > 0) await load(result.images[0].id)
           else pendingLoad.current = { searchId: id, id: result.images[0].id }
@@ -226,14 +224,7 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
           notice: { status: 'error', message: 'search.notices.searchFailed' } }))
       }
     }
-  }, [load, catalog, commit])
-
-  const loadOnboarding = useCallback(() => {
-    updateSize(barnardQuery.size_deg * 60)
-    updateDetector(ANY_DETECTOR)
-    return runSearch((signal) => searchCoordinates(barnardQuery.ra_deg, barnardQuery.dec_deg,
-      barnardQuery.size_deg * 60, null, signal, 'onboarding'))
-  }, [runSearch])
+  }, [load, commit])
 
   const search = useCallback((direction) => {
     const error = cutoutSizeError(size) || (!observer ? 'location.notices.required' : '')
@@ -255,17 +246,17 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
     }
     updateDetector(ANY_DETECTOR)
     commit({ ra, dec, size, detector: ANY_DETECTOR })
-    lastSearch.current = (chosen, signal) => searchCoordinates(ra, dec, size, chosen, signal, catalog)
+    lastSearch.current = (chosen, signal) => searchCoordinates(ra, dec, size, chosen, signal)
     return runSearch((signal) => lastSearch.current(ANY_DETECTOR, signal))
-  }, [size, runSearch, catalog, commit])
+  }, [size, runSearch, commit])
 
   const restore = useCallback((search) => {
     updateSize(search.size)
     updateDetector(search.detector)
     commit(search, false)
-    lastSearch.current = (chosen, signal) => searchCoordinates(search.ra, search.dec, search.size, chosen, signal, catalog)
+    lastSearch.current = (chosen, signal) => searchCoordinates(search.ra, search.dec, search.size, chosen, signal)
     return runSearch((signal) => lastSearch.current(search.detector, signal))
-  }, [catalog, commit, runSearch])
+  }, [commit, runSearch])
 
   useEffect(() => {
     let disposed = false
@@ -286,11 +277,11 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
     if (committed) {
       const search = { ...committed, detector: value }
       commit(search)
-      lastSearch.current = (chosen, signal) => searchCoordinates(search.ra, search.dec, search.size, chosen, signal, catalog)
+      lastSearch.current = (chosen, signal) => searchCoordinates(search.ra, search.dec, search.size, chosen, signal)
     }
     const repeat = lastSearch.current
     if (repeat) runSearch((signal) => repeat(value, signal), true)
-  }, [runSearch, committed, commit, catalog])
+  }, [runSearch, committed, commit])
 
   const currentContext = state.loadObserver === observer && state.loadTime === timeContext
   const visible = !currentContext && state.status === 'loading'
@@ -298,6 +289,6 @@ export default function useFitsImage(observer, timeContext, catalog = 'archive',
   return { ...visible, size, setSize, detector, setDetector, preparing, beginPreparation, cancelPreparation,
     coordinates, setCoordinate, committed, commitPending, restore, applyUrl,
     detail: detail?.source === visible.active ? detail.image : null, detailError, refining, refine,
-    search, searchByCoordinates, loadOnboarding, load, cancel, reset, focus: visible.active ? focus : null,
+    search, searchByCoordinates, load, cancel, reset, focus: visible.active ? focus : null,
     setTextureLimit, textureLimit }
 }

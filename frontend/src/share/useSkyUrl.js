@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { buildShareUrl, parseSkyUrl, syncSkyUrl } from './skyUrl.js'
 
-export default function useSkyUrl({ enabled = true, onRestore = () => {} } = {}) {
-  const [initial] = useState(() => enabled ? parseSkyUrl(window.location.href) : { status: 'none' })
+export default function useSkyUrl({ onRestore = () => {} } = {}) {
+  const [initial] = useState(() => parseSkyUrl(window.location.href))
   const [warning, setWarning] = useState(() => initial.status === 'invalid' ? 'share.notices.invalid' : '')
   const onRestoreRef = useRef(onRestore)
 
   useEffect(() => { onRestoreRef.current = onRestore }, [onRestore])
 
   useEffect(() => {
-    if (!enabled) return
     const restore = () => {
       const classification = parseSkyUrl(window.location.href)
       setWarning(classification.status === 'invalid' ? 'share.notices.invalid' : '')
@@ -17,10 +16,9 @@ export default function useSkyUrl({ enabled = true, onRestore = () => {} } = {})
     }
     window.addEventListener('popstate', restore)
     return () => window.removeEventListener('popstate', restore)
-  }, [enabled])
+  }, [])
 
   const sync = useCallback((search) => {
-    if (!enabled) return
     const current = window.location.href
     const next = syncSkyUrl(current, search)
     if (next !== current) {
@@ -32,12 +30,12 @@ export default function useSkyUrl({ enabled = true, onRestore = () => {} } = {})
       }
     }
     setWarning('')
-  }, [enabled])
+  }, [])
 
   const shareHref = useCallback((search) => {
-    if (!enabled || !search) return ''
+    if (!search) return ''
     return buildShareUrl(window.location.href, search)
-  }, [enabled])
+  }, [])
 
   return { initial, initialSearch: initial.search ?? null, warning, sync, shareHref }
 }

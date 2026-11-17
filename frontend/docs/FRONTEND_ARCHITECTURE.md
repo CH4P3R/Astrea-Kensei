@@ -92,7 +92,7 @@ Concentra la configuración de **GSAP (`@gsap/react`)** y las funciones reutiliz
 ### `src/components/` — Interfaz Superpuesta (HUD)
 Contiene todos los componentes React (DOM/HTML) que flotan sobre el espacio tridimensional:
 
-- **`components/layout/`**: `AppViewport` controla la sesión y la apertura automática o manual del tutorial. `AppWorkspace` integra el lienzo, los hooks y el inspector reales; se reutiliza en la práctica con los FITS locales de Barnard mientras la sesión habitual permanece montada y oculta.
+- **`components/layout/`**: `AppViewport` abre directamente la sesión y controla el diálogo «Acerca de Astrea». `AppWorkspace` integra el lienzo, los hooks y el inspector.
 - **`components/common/`**: Piezas transversales reutilizables, principalmente el contenedor envolvente animado con GSAP (`AnimatedPanel`), que mantiene los paneles en el DOM mientras dura su animación de salida y desactiva sus `pointer-events` al cerrarse.
 - **`components/controls/`**: Herramientas de entrada y navegación rápida.
   - Buscador principal de coordenadas (`RA` / `Dec`), ajuste de `FoV` (`0.02°–0.5°`) y selectores de `collection` y `detector` (`1–6`).

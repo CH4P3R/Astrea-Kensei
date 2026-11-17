@@ -15,7 +15,7 @@ function initialState(primary) {
     request: { year, sameDetector: true }, completedRequest: null }
 }
 
-export default function useImageComparison(primary, enabled, observer, timeContext, textureLimit, catalog = 'archive') {
+export default function useImageComparison(primary, enabled, observer, timeContext, textureLimit) {
   const [state, setState] = useState(() => initialState(primary))
   const loadController = useRef(null)
   const searchController = useRef(null)
@@ -34,7 +34,7 @@ export default function useImageComparison(primary, enabled, observer, timeConte
     async function discover() {
       try {
         if (!query) throw new LocalizedError('inspector.compare.invalidYear')
-        const result = await searchObservations(query, job.signal, catalog)
+        const result = await searchObservations(query, job.signal)
         if (!job.signal.aborted) setState((previous) => previous.source !== source || previous.request !== request ? previous : ({ ...previous,
           completedRequest: request, searchedYear: request.year, searchedSameDetector: request.sameDetector,
           status: previous.pendingId ? 'loading' : 'results', error: '', hasMore: Boolean(result.has_more),
@@ -46,7 +46,7 @@ export default function useImageComparison(primary, enabled, observer, timeConte
     }
     discover()
     return () => job.abort()
-  }, [metadata, source, enabled, request, completedRequest, catalog])
+  }, [metadata, source, enabled, request, completedRequest])
 
   // A selection made in an old sky/observer context must never be appended later.
   useEffect(() => () => loadController.current?.abort(), [contextKey])

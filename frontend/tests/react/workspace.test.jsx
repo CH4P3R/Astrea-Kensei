@@ -6,13 +6,13 @@ import AppViewport from '../../src/components/layout/AppViewport.jsx'
 import I18nProvider from '../../src/i18n/I18nProvider.jsx'
 import { loadMetadata, loadPixels, loadProjection, searchCoordinates, searchImages } from '../../src/services/images.js'
 
-const scene = vi.hoisted(() => ({ fits: null, normalMounts: 0, observerAvailable: true }))
+const scene = vi.hoisted(() => ({ fits: null, observerAvailable: true }))
 vi.mock('@react-three/fiber', () => ({ Canvas: ({ children }) => <>{children}</> }))
 vi.mock('../../src/three/core/SkyScene.jsx', () => ({
   default: function Scene({ fits, onSkyClick }) {
     scene.fits = fits
     const { setTextureLimit } = fits
-    useEffect(() => { setTextureLimit(4096); scene.normalMounts += 1 }, [setTextureLimit])
+    useEffect(() => { setTextureLimit(4096) }, [setTextureLimit])
     return <button onClick={() => onSkyClick({ x: 1, y: 0, z: 0 }, { x: 20, y: 20 })}>sky click</button>
   },
 }))
@@ -88,7 +88,6 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(function () { return this.parentElement })
   window.localStorage.clear()
   scene.fits = null
-  scene.normalMounts = 0
   scene.observerAvailable = true
   searchCoordinates.mockImplementation(async (ra, dec) => result(ra, dec))
   searchImages.mockResolvedValue(result(30, 40))
@@ -103,21 +102,17 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-it('hides only the HUD while the welcome covers the active workspace', () => {
-  const { rerender } = mount(<AppWorkspace covered />)
+it('opens directly into an interactive workspace on the first visit', () => {
+  mount(<AppViewport />)
   const root = document.querySelector('.app-viewport')
-  const hud = root.querySelector('.ui-layer')
-  expect(root.classList.contains('workspace-suspended')).toBe(false)
-  expect(root.hasAttribute('inert')).toBe(true)
-  expect(root.querySelector('.scene-layer')).toBeTruthy()
-  expect(hud.dataset.hidden).toBe('true')
-  expect(hud.getAttribute('aria-hidden')).toBe('true')
-  expect(hud.hasAttribute('inert')).toBe(true)
-  rerender(<I18nProvider><AppWorkspace revealing /></I18nProvider>)
   expect(root.hasAttribute('inert')).toBe(false)
-  expect(root.dataset.revealing).toBe('true')
-  expect(hud.hasAttribute('data-hidden')).toBe(false)
-  expect(hud.hasAttribute('inert')).toBe(false)
+  expect(root.querySelector('.scene-layer')).toBeTruthy()
+  expect(root.querySelector('.ui-layer').hasAttribute('inert')).toBe(false)
+  expect(document.querySelector('dialog')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'View tutorial' })).toBeNull()
+  openSearch()
+  expect(screen.getByRole('button', { name: 'Preparation' }).getAttribute('aria-expanded')).toBe('true')
+  expect(searchCoordinates).not.toHaveBeenCalled()
 })
 
 it('loads a shared image and opens the inspector without a device observer', async () => {
@@ -268,7 +263,7 @@ it('hydrates a shared URL atomically and does not overwrite it with defaults, in
   expect(input('dec').value).toBe('-5.39')
   expect(sizeInput().value).toBe('12')
   await flush()
-  expect(searchCoordinates).toHaveBeenCalledExactlyOnceWith(83.63, -5.39, 12, 3, expect.any(AbortSignal), 'archive')
+  expect(searchCoordinates).toHaveBeenCalledExactlyOnceWith(83.63, -5.39, 12, 3, expect.any(AbortSignal))
   expect(replace).not.toHaveBeenCalled()
   expect(window.location.search).toBe('?ra=83.63&dec=-5.39&size=12&detector=3&foo=1')
   expect(window.location.hash).toBe('#frag')
@@ -295,7 +290,7 @@ it('opens the search panel for an invalid cold link without requests and lets Cl
   submit()
   await flush()
   expect(screen.queryByText(invalid)).toBeNull()
-  expect(searchCoordinates).toHaveBeenCalledExactlyOnceWith(83.63, -5.39, 7, 0, expect.any(AbortSignal), 'archive')
+  expect(searchCoordinates).toHaveBeenCalledExactlyOnceWith(83.63, -5.39, 7, 0, expect.any(AbortSignal))
   expect(window.location.search).toBe('?foo=1&ra=83.63&dec=-5.39&size=7&detector=0')
   expect(window.location.hash).toBe('#frag')
 })
@@ -310,7 +305,7 @@ it('keeps drafts out of the URL, commits coordinate submissions with any detecto
   expect(new URLSearchParams(window.location.search).get('ra')).toBe('1')
   submit()
   expect(scene.fits.committed).toEqual({ ra: 83.63, dec: -5.39, size: 12, detector: 0 })
-  expect(searchCoordinates).toHaveBeenLastCalledWith(83.63, -5.39, 12, 0, expect.any(AbortSignal), 'archive')
+  expect(searchCoordinates).toHaveBeenLastCalledWith(83.63, -5.39, 12, 0, expect.any(AbortSignal))
   expect(new URLSearchParams(window.location.search).get('detector')).toBe('0')
   await flush()
   click('Clear image and results')
@@ -338,13 +333,13 @@ it('restores valid popstate entries, aborts stale searches, clears absent ones, 
   const pending = deferred()
   searchCoordinates.mockReturnValueOnce(pending.promise)
   navigate('/?ra=10&dec=20&size=9&detector=4')
-  expect(searchCoordinates).toHaveBeenLastCalledWith(10, 20, 9, 4, expect.any(AbortSignal), 'archive')
+  expect(searchCoordinates).toHaveBeenLastCalledWith(10, 20, 9, 4, expect.any(AbortSignal))
   const signal = searchCoordinates.mock.lastCall[4]
   navigate('/?ra=30&dec=40&size=12&detector=2&foo=1#frag')
   await flush()
   expect(signal.aborted).toBe(true)
   expect(searchCoordinates).toHaveBeenCalledTimes(2)
-  expect(searchCoordinates).toHaveBeenLastCalledWith(30, 40, 12, 2, expect.any(AbortSignal), 'archive')
+  expect(searchCoordinates).toHaveBeenLastCalledWith(30, 40, 12, 2, expect.any(AbortSignal))
   expect(input('ra').value).toBe('30')
   expect(input('dec').value).toBe('40')
   expect(sizeInput().value).toBe('12')
@@ -447,45 +442,4 @@ it('shows history failures globally without discarding the search commit, includ
   click('Close inspector')
   expect(scene.fits.committed).toBeNull()
   expect(document.querySelector('.status-region').textContent).toContain(historyWarning)
-})
-
-it('isolates tutorial drafts and searches from the URL and navigation', async () => {
-  window.history.replaceState({}, '', '/?ra=10&dec=20&size=12&detector=3')
-  const replace = vi.spyOn(window.history, 'replaceState')
-  mount(<AppWorkspace tutorial onFinishTour={() => {}} />)
-  await flush()
-  expect(input('ra').value).toBe('269.4463')
-  expect(screen.queryByRole('button', { name: 'Copy link', hidden: true })).toBeNull()
-  expect(input('dec').value).toBe('4.7679')
-  expect(scene.fits.committed).toBeNull()
-  expect(searchCoordinates).not.toHaveBeenCalled()
-  searchCoordinates.mockResolvedValueOnce(result(269.4463, 4.7679, [{ id: metadata.id }]))
-  await act(async () => { await scene.fits.loadOnboarding() })
-  expect(document.querySelector('.inspector-summary')).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Copy link', hidden: true })).toBeNull()
-  expect(searchCoordinates.mock.lastCall[5]).toBe('onboarding')
-  navigate('/?ra=bad')
-  expect(screen.queryByText(invalid)).toBeNull()
-  expect(searchCoordinates).toHaveBeenCalledTimes(1)
-  act(() => scene.fits.reset())
-  expect(replace).not.toHaveBeenCalled()
-})
-
-it('keeps the real normal workspace mounted without rehydrating the shared search across tour replay', async () => {
-  window.history.replaceState({}, '', '/?ra=10&dec=20&size=12&detector=3')
-  mount(<AppViewport />)
-  await flush()
-  const normal = document.querySelector('main:not([data-tutorial])')
-  const fitSearch = scene.fits.committed
-  // LanguageSelect exposes the explicit replay launcher.
-  fireEvent.click(document.querySelector('[data-tour-launcher]'))
-  expect(screen.getByRole('dialog')).toBeTruthy()
-  expect(normal.getAttribute('aria-hidden')).toBe('true')
-  click('Skip all')
-  await flush()
-  expect(document.querySelector('main:not([data-tutorial])')).toBe(normal)
-  expect(normal.getAttribute('aria-hidden')).toBeNull()
-  expect(scene.fits.committed).toEqual(fitSearch)
-  expect(searchCoordinates).toHaveBeenCalledTimes(1)
-  expect(scene.normalMounts).toBe(2)
 })

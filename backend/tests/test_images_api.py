@@ -86,20 +86,10 @@ def search_one(app, **overrides):
     return response.json()["images"][0]
 
 
-def post(app, path, body):
-    async def request():
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            return await client.post(path, json=body)
-
-    return asyncio.run(request())
-
-
 def test_zoom_recrop_keeps_the_observation_and_downloads_a_new_window(backend):
     app, archive = backend
     item = search_one(app)
-    response = post(app, f"/api/v1/images/{item['id']}/recrop", {"size_deg": 0.025})
+    response = post(app, f"/api/v1/images/{item['id']}/recrop", json={"size_deg": 0.025})
     assert response.status_code == 200, response.text
     cropped = response.json()
     assert cropped["id"] != item["id"]
@@ -109,7 +99,7 @@ def test_zoom_recrop_keeps_the_observation_and_downloads_a_new_window(backend):
     assert len(archive.searches) == 1
     assert [download["size_deg"] for download in archive.downloads] == [0.1, 0.025]
     assert archive.downloads[-1]["source_url"] == SOURCE
-    assert post(app, f"/api/v1/images/{item['id']}/recrop", {"size_deg": 0.025}).json()["id"] == cropped["id"]
+    assert post(app, f"/api/v1/images/{item['id']}/recrop", json={"size_deg": 0.025}).json()["id"] == cropped["id"]
     assert len(archive.downloads) == 2
 
 
@@ -117,7 +107,7 @@ def test_zoom_recrop_keeps_the_observation_and_downloads_a_new_window(backend):
 def test_zoom_recrop_rejects_invalid_sizes_without_downloading(backend, size):
     app, archive = backend
     item = search_one(app)
-    assert post(app, f"/api/v1/images/{item['id']}/recrop", {"size_deg": size}).status_code == 422
+    assert post(app, f"/api/v1/images/{item['id']}/recrop", json={"size_deg": size}).status_code == 422
     assert archive.downloads == []
 
 
@@ -291,7 +281,7 @@ def test_openapi_describes_routes_and_binary_response(backend):
         "/api/v1/images/{image_id}/planes/{plane}",
         "/api/v1/images/{image_id}/planes/{plane}/pixels",
         "/api/v1/images/search", "/api/v1/images/search-box", "/api/v1/images/load/{image_id}",
-        "/api/v1/images/{image_id}/projection",
+        "/api/v1/images/{image_id}/projection", "/api/v1/images/{image_id}/recrop",
         "/api/v1/stars", "/api/v1/star-catalog", "/api/v1/sky", "/api/v1/targets",
         "/api/v1/health",
     }

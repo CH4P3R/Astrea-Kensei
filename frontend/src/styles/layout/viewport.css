@@ -8,22 +8,15 @@
   height: 100dvh;
   overflow: hidden;
 }
-.app-viewport[data-about-enabled='true'] { --utility-controls-height: 96px; }
 .app-viewport:focus { outline: none; }
 .scene-layer { position: absolute; inset: 0; z-index: var(--z-scene); }
 .ui-layer { position: absolute; inset: 0; z-index: var(--z-hud); pointer-events: none; }
-.ui-layer[data-hidden='true'] { visibility: hidden; }
-.app-viewport[data-revealing='true'] > .ui-layer { animation: hud-enter var(--motion-duration) var(--motion-spring) both; }
-@keyframes hud-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .app-viewport[data-revealing='true'] > .ui-layer { animation: none; }
-}
 .scene-layer canvas { display: block; touch-action: none; }
 
 .language-region {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
   position: absolute;
   left: max(var(--ui-edge-x), env(safe-area-inset-left));
   bottom: max(var(--ui-edge-y), env(safe-area-inset-bottom));

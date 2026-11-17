@@ -9,7 +9,7 @@ import useTranslation from '../../i18n/useTranslation.js'
 import SkyCompass from './SkyCompass.jsx'
 
 const sections = ['time', 'location', 'search', 'sky']
-export default function ContextToolbar({ clock, location, fits, menu, warning, share, stars, surfaceVisible, setSurfaceVisible, dustVisible, setDustVisible, idPrefix = '', compassMarkerRef }) {
+export default function ContextToolbar({ clock, location, fits, menu, warning, share, stars, surfaceVisible, setSurfaceVisible, dustVisible, setDustVisible, compassMarkerRef }) {
   const { t, date } = useTranslation()
   const options = sections.map((id) => ({ id, label: t(`${id}.title`) }))
   const { active, hint, keepOpen, preview, leave } = menu
@@ -29,8 +29,8 @@ export default function ContextToolbar({ clock, location, fits, menu, warning, s
       <nav className="context-rail" aria-label={t('common.navigation')} data-select-obstacle data-image-obstacle>
         {options.map(({ id, label }) => <div className="context-tool" key={id}>
           <Tooltip message={label} open={hint === id} compact>
-          <button id={`${idPrefix}context-trigger-${id}`} type="button" className={`context-trigger${active === id ? ' is-active' : ''}`}
-            aria-label={label} aria-expanded={active === id} aria-controls={`context-${idPrefix}${id}`}
+          <button id={`context-trigger-${id}`} type="button" className={`context-trigger${active === id ? ' is-active' : ''}`}
+            aria-label={label} aria-expanded={active === id} aria-controls={`context-${id}`}
             onPointerEnter={() => preview(id)}
             onPointerLeave={menu.cancelPreview}
             onFocus={() => preview(id)} onBlur={menu.cancelPreview}
@@ -41,7 +41,7 @@ export default function ContextToolbar({ clock, location, fits, menu, warning, s
         </div>)}
       </nav>
       <div className="context-panels" onPointerEnter={() => { keepOpen(); menu.cancelPreview() }}>
-        {options.map(({ id, label }) => <ContextPanel key={id} id={`${idPrefix}${id}`} tourId={id} anchorId={`${idPrefix}context-trigger-${id}`}
+        {options.map(({ id, label }) => <ContextPanel key={id} id={id} anchorId={`context-trigger-${id}`}
           label={label} visible={active === id}>
           {id === 'time' && <TimeControls clock={clock} />}
           {id === 'location' && <LocationControls {...location} />}

@@ -16,10 +16,9 @@ from app.schemas.images import (
     ImageSearchQuery, ImageSearchResponse, ImageSummary, PlaneMetadata,
 )
 from app.services.image_availability import ObservationAvailability
-from app.services.fits_image import InvalidFitsError, PLANES, decode_cutout, decode_plane
+from app.services.fits_image import PLANES, decode_cutout, decode_plane
 from app.core.config import DEFAULT_BAD_FLAGS
 from app.services.quality import bad_bits, corrected
-from app.services.onboarding import OnboardingCatalog
 
 
 def _utc(mjd: float | None) -> str | None:
@@ -36,26 +35,6 @@ class ImageService:
         # A fixed-size lock pool avoids duplicate downloads within a worker.
         self._locks = [Lock() for _ in range(32)]
         self._availability = ObservationAvailability()
-        self.onboarding_catalog = OnboardingCatalog()
-
-    def onboarding(self, query: ImageSearchQuery) -> ImageSearchResponse:
-        images = []
-        for entry in self.onboarding_catalog.entries():
-            selection = entry["selection"]
-            requested, archive = selection["requested"], selection["archive"]
-            if any(abs(getattr(query, key) - requested[key]) > 1e-8 for key in ("ra_deg", "dec_deg", "size_deg")):
-                continue
-            if query.detector is not None and archive["detector"] != query.detector:
-                continue
-            observed = archive["observed_start_mjd"]
-            if query.start_time and observed < float(Time(query.start_time).mjd):
-                continue
-            if query.end_time and observed > float(Time(query.end_time).mjd):
-                continue
-            self.store.register(entry["id"], {**selection, "onboarding": True})
-            images.append(self._summary(entry["id"], selection))
-        images.sort(key=lambda image: image.observation.start_mjd, reverse=True)
-        return ImageSearchResponse(query=query, images=images[:query.limit], has_more=len(images) > query.limit)
 
     def availability(self, query: ImageAvailabilityQuery) -> ImageAvailabilityResponse:
         return self._availability.get(query, self.archive)
@@ -100,7 +79,7 @@ class ImageService:
             metadata = self.store.metadata(identifier)
             if metadata is None:
                 request = selection["requested"]
-                content = self.onboarding_catalog.content(identifier) if selection.get("onboarding") else self.archive.download_cutout(
+                content = self.archive.download_cutout(
                     source_url=selection["archive"]["source_url"],
                     ra_deg=request["ra_deg"], dec_deg=request["dec_deg"], size_deg=request["size_deg"],
                     label=identifier,
@@ -118,8 +97,6 @@ class ImageService:
 
     def recrop(self, identifier: str, size_deg: float) -> ImageMetadata:
         selection = self.store.selection(identifier)
-        if selection.get("onboarding"):
-            raise InvalidFitsError("The tutorial uses a fixed local cutout; no archive recrop is available")
         center = self.metadata(identifier).image.center
         requested = {**center.model_dump(), "size_deg": size_deg}
         identity = {"format_version": 1, "source_url": selection["archive"]["source_url"],
@@ -141,7 +118,7 @@ class ImageService:
             if metadata is None:
                 request = selection["requested"]
                 crpix = {card.keyword: card.value for card in image.wcs_header}
-                content = self.onboarding_catalog.content(identifier) if selection.get("onboarding") else self.archive.download_plane(
+                content = self.archive.download_plane(
                     source_url=selection["archive"]["source_url"],
                     ra_deg=request["ra_deg"], dec_deg=request["dec_deg"], size_deg=request["size_deg"],
                     extension=PLANES[plane][0],

@@ -11,7 +11,7 @@ import useTranslation from '../../i18n/useTranslation.js'
 import ShareLink from '../../share/ShareLink.jsx'
 
 export default function ImageInspector({ open, onClose, tab, onTabChange, fits, displayed,
-  appearance, comparison, playback, reason, primaryProjection, frames, projections, onCenter, share, highlightedTab, referenceObserver = false }) {
+  appearance, comparison, playback, reason, primaryProjection, frames, projections, onCenter, share, referenceObserver = false }) {
   const { t } = useTranslation()
   const id = useId()
   if (!fits.active || !open) return null
@@ -21,7 +21,7 @@ export default function ImageInspector({ open, onClose, tab, onTabChange, fits, 
   return <>
     <aside className="image-inspector" data-open={open} data-active-tab={tab} inert={!open} aria-hidden={!open} aria-label={t('inspector.title')} data-image-obstacle data-select-obstacle>
       <div className="inspector-topbar">
-        <Tabs id={id} label={t('inspector.title')} items={items} value={tab} onChange={onTabChange} highlighted={highlightedTab} />
+        <Tabs id={id} label={t('inspector.title')} items={items} value={tab} onChange={onTabChange} />
         <Tooltip message={t('inspector.actions.close')} inline><button type="button" className="inspector-close"
           onClick={onClose}
           aria-label={t('inspector.actions.close')}><InspectorIcon name="close" /></button></Tooltip>

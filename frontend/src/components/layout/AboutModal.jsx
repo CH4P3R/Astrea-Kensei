@@ -13,7 +13,7 @@ export default function AboutModal({ onClose }) {
     initialFocusRef={closeRef} blocked={closing} closing={closing} onExited={onClose}
     onClose={() => setClosing(true)}
     footer={<button ref={closeRef} type="button" className="about-close" onClick={() => setClosing(true)}>
-      {t('onboarding.about.close')}
+      {t('about.close')}
     </button>}>
     <AboutContent titleId={titleId} descriptionId={descriptionId} />
   </Modal>

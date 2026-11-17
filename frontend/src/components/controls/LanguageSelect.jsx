@@ -3,32 +3,25 @@ import GlobalLine from '../common/GlobalLine.jsx'
 import useTranslation from '../../i18n/useTranslation.js'
 import { languages } from '../../i18n/resources.js'
 import { useId } from 'react'
-import Question2Fill from '../common/Question2Fill.jsx'
 import Tooltip from '../common/Tooltip.jsx'
 import InfoRounded from '../common/InfoRounded.jsx'
 
-export default function LanguageSelect({ onStartTour, onOpenAbout, suspended = false, className = 'language-region' }) {
+export default function LanguageSelect({ onOpenAbout }) {
   const { t, language, setLanguage } = useTranslation()
   const id = useId()
   const current = languages.find((option) => option.value === language)
-  return <div className={`${className}${onOpenAbout ? ' language-region--about' : ''}`} data-image-obstacle>
-    {(onStartTour || onOpenAbout) && <div className="language-actions">
-    {onStartTour && <Tooltip key={suspended ? 'suspended' : 'ready'} message={t('onboarding.restart')}
-      inline hoverOnly open={suspended ? false : undefined}>
-      <button type="button" className="tour-launcher" data-tour-launcher aria-label={t('onboarding.restart')} onClick={onStartTour}>
-        <Question2Fill />
-      </button>
-    </Tooltip>}
-    {onOpenAbout && <Tooltip message={t('onboarding.about.title')} inline open={suspended ? false : undefined}>
-      <button type="button" className="about-launcher" data-about-launcher aria-label={t('onboarding.about.title')}
-        aria-haspopup="dialog" disabled={suspended} onClick={onOpenAbout}>
+  return <div className={`language-region${onOpenAbout ? ' language-region--about' : ''}`} data-image-obstacle>
+    {onOpenAbout && <div className="language-actions">
+    <Tooltip message={t('about.title')} inline>
+      <button type="button" className="about-launcher" data-about-launcher aria-label={t('about.title')}
+        aria-haspopup="dialog" onClick={onOpenAbout}>
         <InfoRounded />
       </button>
-    </Tooltip>}
+    </Tooltip>
     </div>}
     <Select id={id} className="language-select" label={t('common.language.label')}
       ariaLabel={t('common.language.current', { language: current.label })}
-      value={language} onChange={setLanguage} options={languages} icon={<GlobalLine />} disabled={suspended}
+      value={language} onChange={setLanguage} options={languages} icon={<GlobalLine />}
       avoidSelector="[data-select-obstacle]" />
   </div>
 }
