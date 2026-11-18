@@ -134,6 +134,25 @@
     "resultsYear": "Observations from {{year}} · UTC",
     "invalidYear": "Select a mission year from 2025 through the current year."
   },
+  "spectral": {
+    "title": "Wavelength at the target",
+    "target": "ICRS · RA {{ra}}° · Dec {{dec}}°",
+    "sample": "λ {{wavelength}} µm · bandwidth {{bandwidth}} µm",
+    "difference": "Δλ from A: {{difference}} µm",
+    "referenceUnavailable": "Δλ unavailable until A has a calibrated sample.",
+    "loading": "Reading spectral calibration…",
+    "failed": "Spectral calibration could not be loaded.",
+    "retry": "Retry spectral calibration for {{frame}}",
+    "unavailable": "No calibrated spectral sample available.",
+    "outside_image": "The target is outside this cutout.",
+    "invalid_wcs": "The target pixel could not be located reliably.",
+    "calibration_unavailable": "Could not identify a supported spectral calibration for this observation.",
+    "calibration_mismatch": "The calibration does not match this observation.",
+    "invalid_calibration": "The calibrated sample is missing or invalid.",
+    "noTarget": "The reference has no valid target position.",
+    "scope": "One native pixel at the same sky position in each image. This does not establish equivalence across the field or confirm variability.",
+    "help": "λ is the calibrated central wavelength and bandwidth is the width of the spectral response, not a measurement uncertainty. Each value comes from the native pixel containing A's requested ICRS position, using the observation's CWAVE/CBAND calibration without spatial interpolation. Δλ is the signed wavelength difference relative to A. Similar wavelengths alone do not establish matching spectral responses, calibration, image quality or resolution. These checks run independently of playback."
+  },
   "projection": {
     "waiting": "Updating the image position…",
     "refining": "Loading a new cutout for this zoom…",

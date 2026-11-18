@@ -61,3 +61,8 @@ export async function loadPixels(id, signal, processing = {}) {
 export async function loadProjection(id, context, signal) {
   return (await request(`/${id}/projection`, { signal, body: context })).json()
 }
+
+export async function loadSpectralSample(id, target, signal) {
+  const query = new URLSearchParams({ ra_deg: target.ra_deg, dec_deg: target.dec_deg })
+  return (await request(`/${id}/spectral?${query}`, { signal })).json()
+}

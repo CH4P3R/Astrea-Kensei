@@ -46,3 +46,8 @@
 .comparison-playback-buttons .comparison-play-button { flex: 1; min-width: 0; }
 .comparison-playback .range-field { margin-bottom: 0; }
 .comparison-playback .input-field { margin-top: 8px; }
+.comparison-spectral-list { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 10px; }
+.comparison-spectral-list > li { display: flex; align-items: baseline; gap: 10px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.comparison-spectral-list > li > strong { min-width: 1.4em; }
+.comparison-spectral-values { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.comparison-spectral-values .text-action { justify-self: start; }

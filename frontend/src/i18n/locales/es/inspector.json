@@ -134,6 +134,25 @@
     "resultsYear": "Observaciones de {{year}} · UTC",
     "invalidYear": "Selecciona un año de la misión, desde 2025 hasta el año actual."
   },
+  "spectral": {
+    "title": "Longitud de onda en el objetivo",
+    "target": "ICRS · RA {{ra}}° · Dec {{dec}}°",
+    "sample": "λ {{wavelength}} µm · ancho de banda {{bandwidth}} µm",
+    "difference": "Δλ respecto a A: {{difference}} µm",
+    "referenceUnavailable": "Δλ no disponible hasta obtener una muestra calibrada de A.",
+    "loading": "Consultando calibración espectral…",
+    "failed": "No se pudo cargar la calibración espectral.",
+    "retry": "Reintentar calibración espectral de {{frame}}",
+    "unavailable": "No hay una muestra espectral calibrada disponible.",
+    "outside_image": "El objetivo está fuera de este recorte.",
+    "invalid_wcs": "No se pudo localizar el píxel del objetivo con fiabilidad.",
+    "calibration_unavailable": "No se pudo identificar una calibración espectral compatible para esta observación.",
+    "calibration_mismatch": "La calibración no corresponde a esta observación.",
+    "invalid_calibration": "La muestra calibrada no está disponible o no es válida.",
+    "noTarget": "La referencia no tiene una posición objetivo válida.",
+    "scope": "Un píxel nativo en la misma posición celeste de cada imagen. Esto no establece equivalencia en todo el campo ni confirma variabilidad.",
+    "help": "λ es la longitud de onda central calibrada y el ancho de banda es la anchura de la respuesta espectral, no una incertidumbre de medición. Cada valor corresponde al píxel nativo que contiene la posición ICRS solicitada en A y usa la calibración CWAVE/CBAND de la observación, sin interpolación espacial. Δλ es la diferencia con signo respecto a A. Longitudes de onda similares por sí solas no establecen una respuesta espectral, calibración, calidad o resolución equivalentes. Esta consulta funciona de forma independiente a la reproducción."
+  },
   "projection": {
     "waiting": "Actualizando la posición de la imagen…",
     "refining": "Cargando un nuevo recorte para el zoom…",

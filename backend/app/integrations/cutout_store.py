@@ -89,3 +89,15 @@ class CutoutStore:
     def save_plane(self, identifier: str, plane: str, metadata: dict, pixels: bytes) -> None:
         self._write(self.plane_path(identifier, plane), pixels)
         self._write_json(self._path(identifier, f"{plane}.json"), metadata)
+
+    def spectral_metadata(self, identifier: str, column: int, row: int) -> dict | None:
+        """A separate versioned cache also enriches already cached IMAGE cutouts."""
+        try:
+            return json.loads(self._path(identifier, f"spectral-v1-{column}-{row}.json").read_text())
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+        except OSError as error:
+            raise CacheError("Could not read cached spectral metadata") from error
+
+    def save_spectral(self, identifier: str, column: int, row: int, metadata: dict) -> None:
+        self._write_json(self._path(identifier, f"spectral-v1-{column}-{row}.json"), metadata)

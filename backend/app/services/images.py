@@ -8,17 +8,19 @@ from threading import Lock
 
 from astropy.time import Time
 import numpy as np
+from pydantic import ValidationError
 
 from app.integrations.cutout_store import CacheError, CutoutStore
 from app.integrations.irsa import IrsaClient
 from app.schemas.images import (
     ImageAvailabilityQuery, ImageAvailabilityResponse, ImageMetadata,
-    ImageSearchQuery, ImageSearchResponse, ImageSummary, PlaneMetadata,
+    ImageSearchQuery, ImageSearchResponse, ImageSummary, PlaneMetadata, SpectralMetadata,
 )
 from app.services.image_availability import ObservationAvailability
 from app.services.fits_image import PLANES, decode_cutout, decode_plane
 from app.core.config import DEFAULT_BAD_FLAGS
 from app.services.quality import bad_bits, corrected
+from app.services.spectral import target_pixel
 
 
 def _utc(mjd: float | None) -> str | None:
@@ -34,6 +36,9 @@ class ImageService:
         self.bad_flags = bad_flags
         # A fixed-size lock pool avoids duplicate downloads within a worker.
         self._locks = [Lock() for _ in range(32)]
+        # Optional calibration requests must never hold the IMAGE locks used
+        # by live projection renewals and pixel access.
+        self._spectral_locks = [Lock() for _ in range(32)]
         self._availability = ObservationAvailability()
 
     def availability(self, query: ImageAvailabilityQuery) -> ImageAvailabilityResponse:
@@ -108,6 +113,42 @@ class ImageService:
     def pixels(self, identifier: str) -> Path:
         self.metadata(identifier)
         return self.store.pixels_path(identifier)
+
+    def spectral(self, identifier: str, ra_deg: float, dec_deg: float) -> SpectralMetadata:
+        metadata = self.metadata(identifier)
+        target = {"ra_deg": ra_deg, "dec_deg": dec_deg, "frame": "ICRS"}
+        location, reason = target_pixel(metadata.image, ra_deg, dec_deg)
+        if reason is not None:
+            return SpectralMetadata(image_id=identifier, target=target, status="unavailable", reason=reason)
+        column, row = location
+        cards = {card.keyword: card.value for card in metadata.image.wcs_header}
+        grid = (float(cards["CRPIX1"]), float(cards["CRPIX2"]), metadata.image.width, metadata.image.height)
+        identity = {"source_url": metadata.source_url, "grid": list(grid)}
+
+        def response(data):
+            return SpectralMetadata(image_id=identifier, target=target, **data)
+
+        with self._spectral_locks[int(identifier[:8], 16) % len(self._spectral_locks)]:
+            cached = self.store.spectral_metadata(identifier, column, row)
+            if isinstance(cached, dict) and cached.get("identity") == identity:
+                try:
+                    result = response(cached["data"])
+                    if (result.status == "available" and result.sample.pixel_x == column + 1
+                            and result.sample.pixel_y == row + 1):
+                        return result
+                except (ValidationError, KeyError, TypeError):
+                    pass
+            data = self.archive.spectral_sample(
+                source_url=metadata.source_url, grid=grid, pixel_x=column, pixel_y=row)
+            if data.get("sample") is not None:
+                data = {**data, "sample": {**data["sample"], "pixel_x": column + 1, "pixel_y": row + 1}}
+            result = response(data)
+            # Unknown data and transient failures must remain retryable. Only
+            # successful native-pixel samples with provenance become persistent.
+            if result.status == "available":
+                saved = result.model_dump(mode="json", exclude={"image_id", "target"})
+                self.store.save_spectral(identifier, column, row, {"identity": identity, "data": saved})
+            return result
 
     def plane(self, identifier: str, plane: str) -> PlaneMetadata:
         """Describe an extra plane, downloading it the first time it is asked for."""

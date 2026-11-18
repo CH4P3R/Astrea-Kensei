@@ -6,6 +6,7 @@ import ObservationDate from '../controls/ObservationDate.jsx'
 import PlaybackControls from './PlaybackControls.jsx'
 import ComparisonTimeline from './ComparisonTimeline.jsx'
 import ComparisonDateSelector from './ComparisonDateSelector.jsx'
+import SpectralComparison from './SpectralComparison.jsx'
 import useTranslation from '../../i18n/useTranslation.js'
 import '../../styles/components/comparison.css'
 
@@ -32,6 +33,7 @@ export default function ImageComparisonPanel({ comparison, playback, reason, pri
         onClear={() => { returnToReference(); comparison.clear() }} />
       {frames.length > 1 && <PlaybackControls playback={playback} reason={reason} frames={frames} />}
     </section>
+    <SpectralComparison frames={frames} primary={primary} />
     <div className="comparison-browser">
       <section className="inspector-section comparison-search">
         <h3>{t('inspector.compare.select')}<HelpButton label={t('inspector.compare.select')} message={t('inspector.help.candidates')} /></h3>

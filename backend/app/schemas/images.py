@@ -125,6 +125,50 @@ class ImageMetadata(ImageSummary):
     image: ImageDataMetadata
 
 
+class SpectralQuery(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    ra_deg: float = Field(ge=0, lt=360)
+    dec_deg: float = Field(ge=-90, le=90)
+
+
+class SpectralSample(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    pixel_x: int = Field(ge=1, description="One-based column in the loaded cutout.")
+    pixel_y: int = Field(ge=1, description="One-based row in the loaded cutout, from the bottom.")
+    detector_x: int = Field(ge=1, description="One-based column in the full original IMAGE, in sky orientation, not electronics coordinates.")
+    detector_y: int = Field(ge=1, description="One-based row in the full original IMAGE, in sky orientation.")
+    wavelength_um: float = Field(gt=0, description="CWAVE value at the native pixel containing the target, in micrometers.")
+    bandwidth_um: float = Field(gt=0, description="CBAND bandwidth in micrometers; not a measurement uncertainty.")
+
+
+class SpectralCalibration(BaseModel):
+    source_url: str
+    method: Literal["CWAVE/CBAND"] = "CWAVE/CBAND"
+
+
+class SpectralMetadata(BaseModel):
+    """One native pixel's calibrated spectral sampling, not a compatibility certificate."""
+
+    image_id: str
+    target: SkyPosition
+    status: Literal["available", "unavailable"]
+    reason: Literal["outside_image", "invalid_wcs", "calibration_unavailable",
+                    "calibration_mismatch", "invalid_calibration"] | None = None
+    sample: SpectralSample | None = None
+    calibration: SpectralCalibration | None = None
+
+    @model_validator(mode="after")
+    def consistent_status(self):
+        if self.status == "available":
+            if self.sample is None or self.calibration is None or self.reason is not None:
+                raise ValueError("Available spectral data require a sample and calibration provenance.")
+        elif self.reason is None or self.sample is not None:
+            raise ValueError("Unavailable spectral data require a reason and no sample.")
+        return self
+
+
 PlaneName = Literal["flags", "zodi", "variance"]
 
 

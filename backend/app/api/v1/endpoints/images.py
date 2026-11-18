@@ -9,6 +9,7 @@ from app.api.dependencies import get_image_service
 from app.schemas.images import (
     BoxSearchResponse, BoxSelection, ImageAvailabilityQuery, ImageAvailabilityResponse,
     ImageMetadata, ImageRecropRequest, ImageSearchQuery, ImageSearchResponse, PlaneMetadata, PlaneName,
+    SpectralMetadata, SpectralQuery,
 )
 from app.services.images import ImageService
 from app.schemas.sky import BoxSearchRequest, ClickSearchRequest, ProjectionRequest
@@ -35,6 +36,16 @@ def image_availability(query: Annotated[ImageAvailabilityQuery, Query()], servic
 def image_metadata(image_id: ImageId, service: Service):
     """Load a selected cutout and return its dimensions, WCS and provenance."""
     return service.metadata(image_id)
+
+
+@router.get("/{image_id}/spectral", response_model=SpectralMetadata)
+def image_spectral(image_id: ImageId, query: Annotated[SpectralQuery, Query()], service: Service):
+    """Read CWAVE/CBAND for the native pixel containing this ICRS target.
+
+    Fetches independently of display/playback. It describes one pixel's
+    spectral sampling; it does not certify photometric or temporal equivalence.
+    """
+    return service.spectral(image_id, query.ra_deg, query.dec_deg)
 
 
 @router.get(

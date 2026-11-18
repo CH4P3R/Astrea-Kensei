@@ -397,6 +397,18 @@ class IrsaClient:
             logger.warning("Partial download unavailable (%s); using the IRSA cutout service.", exc)
             return None
 
+    def spectral_sample(self, source_url, grid, pixel_x, pixel_y):
+        """Calibrated wavelength/bandwidth at a native pixel of a loaded cutout."""
+        from app.integrations.spectral_calibration import sample
+
+        source_url, release = _image_url(source_url)
+        try:
+            return sample(self.ranges, source_url, release, grid, pixel_x, pixel_y, self._deadline())
+        except requests.Timeout as error:
+            raise ArchiveTimeout("IRSA spectral calibration request timed out.") from error
+        except requests.RequestException as error:
+            raise ArchiveError("IRSA spectral calibration is temporarily unavailable.") from error
+
     def _service_cutout(
         self, source_url: str, ra_deg: float, dec_deg: float, size_deg: float, deadline: float | None = None,
     ) -> bytes:

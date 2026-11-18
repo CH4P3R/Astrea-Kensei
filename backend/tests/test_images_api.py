@@ -2,8 +2,10 @@
 
 import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from io import BytesIO
+from threading import Event
 
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -84,6 +86,148 @@ def search_one(app, **overrides):
     response = get(app, "/api/v1/images", params={**QUERY, **overrides})
     assert response.status_code == 200, response.text
     return response.json()["images"][0]
+
+
+def spectral_reader(monkeypatch, archive):
+    calls = []
+
+    def sample(**kwargs):
+        calls.append(kwargs)
+        x, y = kwargs["pixel_x"], kwargs["pixel_y"]
+        return {"status": "available", "reason": None,
+                "sample": {"detector_x": x + 101, "detector_y": y + 201,
+                           "wavelength_um": 1.1 + x * 0.01 + y * 0.001, "bandwidth_um": 0.025},
+                "calibration": {"source_url": "https://irsa.ipac.caltech.edu/data/SPHEREx/dr1/cal/spectral_wcs/test.fits",
+                                "method": "CWAVE/CBAND"}}
+
+    monkeypatch.setattr(archive, "spectral_sample", sample, raising=False)
+    return calls
+
+
+def spectral_target(app, item, x, y):
+    metadata = get(app, item["metadata_url"]).json()
+    header = fits.Header()
+    for card in metadata["image"]["wcs_header"]:
+        header[card["keyword"]] = card["value"]
+    ra, dec = WCS(header).pixel_to_world_values(x, y)
+    return {"ra_deg": float(ra), "dec_deg": float(dec)}
+
+
+def test_spectral_uses_requested_native_pixel_and_preserves_original_data(backend, monkeypatch):
+    app, archive = backend
+    item = search_one(app)
+    original = get(app, item["pixels_url"]).content
+    calls = spectral_reader(monkeypatch, archive)
+    target = spectral_target(app, item, 2.15, 0.1)
+    result = get(app, f"/api/v1/images/{item['id']}/spectral", params=target)
+    assert result.status_code == 200, result.text
+    data = result.json()
+    assert data["target"] == {**target, "frame": "ICRS"}
+    assert data["sample"] == {"pixel_x": 3, "pixel_y": 1, "detector_x": 103, "detector_y": 201,
+                              "wavelength_um": 1.12, "bandwidth_um": 0.025}
+    assert calls[0]["pixel_x"] == 2 and calls[0]["pixel_y"] == 0
+    assert calls[0]["grid"] == (2.0, 1.5, 3, 2)
+    assert calls[0]["source_url"] == SOURCE
+    assert get(app, item["pixels_url"]).content == original
+
+
+def test_spectral_enriches_old_cached_cutout_and_persists_native_pixel_sample(backend, monkeypatch):
+    app, archive = backend
+    item = search_one(app)
+    first_target = spectral_target(app, item, 0.1, 0.1)
+    second_target = spectral_target(app, item, 0.2, 0.2)
+    archive.download_error = ArchiveError("Existing image must not be downloaded again")
+    calls = spectral_reader(monkeypatch, archive)
+    path = f"/api/v1/images/{item['id']}/spectral"
+    first = get(app, path, params=first_target)
+    assert first.status_code == 200
+    # A second sky point in the same native pixel keeps its own requested
+    # coordinates while sharing that pixel's calibrated spectral values.
+    second = get(app, path, params=second_target).json()
+    assert second["sample"] == first.json()["sample"]
+    assert second["target"] == {**second_target, "frame": "ICRS"}
+    assert len(calls) == 1
+    restarted = create_app(Settings(cutout_cache_dir=app.state.image_service.store.root))
+    offline = FakeArchive()
+    offline.download_error = ArchiveError("Use persistent cache")
+    restarted.state.image_service.archive = offline
+    assert get(restarted, path, params=first_target).json() == first.json()
+    assert offline.downloads == []
+
+
+def test_spectral_outside_image_does_not_clamp_or_fetch_calibration(backend, monkeypatch):
+    app, archive = backend
+    item = search_one(app)
+    calls = spectral_reader(monkeypatch, archive)
+    target = spectral_target(app, item, -0.6, 0.1)
+    result = get(app, f"/api/v1/images/{item['id']}/spectral", params=target).json()
+    assert result["status"] == "unavailable" and result["reason"] == "outside_image"
+    assert result["sample"] is None and calls == []
+
+
+def test_spectral_unknown_is_retryable_and_does_not_block_image(backend, monkeypatch):
+    app, archive = backend
+    item = search_one(app)
+    target = spectral_target(app, item, 1, 0)
+    path = f"/api/v1/images/{item['id']}/spectral"
+    monkeypatch.setattr(archive, "spectral_sample", lambda **kwargs: {
+        "status": "unavailable", "reason": "calibration_unavailable", "sample": None, "calibration": None,
+    }, raising=False)
+    assert get(app, path, params=target).json()["reason"] == "calibration_unavailable"
+    assert get(app, item["pixels_url"]).status_code == 200
+    calls = spectral_reader(monkeypatch, archive)
+    assert get(app, path, params=target).json()["status"] == "available"
+    assert len(calls) == 1
+
+
+def test_spectral_network_error_is_retryable_without_corrupting_cached_image(backend, monkeypatch):
+    app, archive = backend
+    item = search_one(app)
+    target = spectral_target(app, item, 1, 0)
+    path = f"/api/v1/images/{item['id']}/spectral"
+
+    def timeout(**kwargs):
+        raise ArchiveTimeout("temporary failure")
+
+    monkeypatch.setattr(archive, "spectral_sample", timeout, raising=False)
+    assert get(app, path, params=target).status_code == 504
+    assert get(app, item["pixels_url"]).status_code == 200
+    spectral_reader(monkeypatch, archive)
+    assert get(app, path, params=target).status_code == 200
+
+
+def test_slow_spectral_read_does_not_block_cached_image_metadata(backend, monkeypatch):
+    app, archive = backend
+    item = search_one(app)
+    target = spectral_target(app, item, 1, 0)
+    entered, release = Event(), Event()
+
+    def pending(**kwargs):
+        entered.set()
+        assert release.wait(5)
+        return {"status": "unavailable", "reason": "calibration_unavailable", "sample": None, "calibration": None}
+
+    monkeypatch.setattr(archive, "spectral_sample", pending, raising=False)
+    service = app.state.image_service
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        spectral = executor.submit(service.spectral, item["id"], **target)
+        try:
+            assert entered.wait(2)
+            # Projection refresh begins by reading this metadata. Its lock
+            # must stay independent of a slow optional calibration request.
+            metadata = executor.submit(service.metadata, item["id"])
+            assert metadata.result(timeout=1).id == item["id"]
+        finally:
+            release.set()
+        assert spectral.result(timeout=2).status == "unavailable"
+
+
+@pytest.mark.parametrize("params", [{}, {"ra_deg": 1}, {"ra_deg": "nan", "dec_deg": 0},
+                                   {"ra_deg": 360, "dec_deg": 0}, {"ra_deg": 0, "dec_deg": 91}])
+def test_spectral_requires_valid_explicit_target(backend, params):
+    app, _ = backend
+    item = search_one(app)
+    assert get(app, f"/api/v1/images/{item['id']}/spectral", params=params).status_code == 422
 
 
 def test_zoom_recrop_keeps_the_observation_and_downloads_a_new_window(backend):
@@ -282,8 +426,9 @@ def test_openapi_describes_routes_and_binary_response(backend):
         "/api/v1/images/{image_id}/planes/{plane}/pixels",
         "/api/v1/images/search", "/api/v1/images/search-box", "/api/v1/images/load/{image_id}",
         "/api/v1/images/{image_id}/projection", "/api/v1/images/{image_id}/recrop",
+        "/api/v1/images/{image_id}/spectral",
         "/api/v1/stars", "/api/v1/star-catalog", "/api/v1/sky", "/api/v1/targets",
-        "/api/v1/health",
+        "/api/v1/health", "/api/v1/solar-system",
     }
     content = paths["/api/v1/images/{image_id}/pixels"]["get"]["responses"]["200"]["content"]
     assert content["application/octet-stream"]["schema"]["format"] == "binary"
