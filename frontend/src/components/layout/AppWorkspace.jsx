@@ -22,12 +22,16 @@ import useImageComparison from '../../hooks/useImageComparison.js'
 import useComparisonPresentation from '../../hooks/useComparisonPresentation.js'
 import useProjectedImage from '../../hooks/useProjectedImage.js'
 import ConfirmRegionModal from '../common/ConfirmRegionModal.jsx'
+import PixelTooltip from '../controls/PixelTooltip.jsx'
+import { createPixelHoverStore } from '../controls/pixelHoverStore.js'
 import useSkyUrl from '../../share/useSkyUrl.js'
 import { sharedReferenceObserver } from '../../share/referenceObserver.js'
 
 export default function AppWorkspace({ onOpenAbout }) {
   const { t, language } = useTranslation()
   const rootRef = useRef(null)
+  const pixelHover = useMemo(() => createPixelHoverStore(), [])
+  const clearPixelHover = useCallback(() => pixelHover.publish(null), [pixelHover])
   const compassMarkerRef = useRef(null)
   const restoreUrlRef = useRef(null)
   const onRestore = useCallback((state) => restoreUrlRef.current?.(state), [])
@@ -136,7 +140,8 @@ export default function AppWorkspace({ onOpenAbout }) {
   return (<>
     <main ref={rootRef} tabIndex={-1} className="app-viewport"
       data-inspector-open={inspectorOpen} aria-label={t('common.viewport')}>
-      <div className="scene-layer" aria-label={t('common.scene')}>
+      <div className="scene-layer" aria-label={t('common.scene')}
+        onPointerLeave={clearPixelHover} onPointerDown={clearPixelHover}>
         <Canvas orthographic camera={{ position: [0, 0, 0], near: 0.01, far: 250 }}>
           <SkyScene observer={observer} fits={fits} stars={stars} solarSystem={solarSystem} surfaceVisible={surfaceVisible} dustVisible={dustVisible} skyGuides={skyGuides}
             deepSkyVisible={deepSkyVisible}
@@ -144,10 +149,11 @@ export default function AppWorkspace({ onOpenAbout }) {
             timestamp={clock.timestamp} onSkyClick={onSkyClick} frameImages={frameImages} viewport={viewport} focusVersion={focusVersion}
             layers={layers} appearance={appearance} frameId={playback.frameId}
             onImageZoom={tab === 'compare' ? undefined : fits.refine}
-            searchDirection={searchDirection} compassMarkerRef={compassMarkerRef} />
+            searchDirection={searchDirection} compassMarkerRef={compassMarkerRef} onPixelHover={pixelHover.publish} />
         </Canvas>
       </div>
-      <div className="ui-layer">
+      <div className="ui-layer" onPointerOver={clearPixelHover}>
+        <PixelTooltip store={pixelHover} />
         <ContextToolbar clock={clock} location={location} fits={fits} menu={menu} warning={skyUrl.warning} share={share}
           stars={stars} surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
           groundOpacity={groundOpacity} setGroundOpacity={setGroundOpacity}

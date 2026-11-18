@@ -1,5 +1,18 @@
 {
   "title": "Inspector de imágenes",
+  "pixel": {
+    "title": "Información del píxel",
+    "coordinates": "Píxel ({{x}}, {{y}})",
+    "original": "Valor original",
+    "processed": "Valor procesado",
+    "normalized": "Valor normalizado",
+    "dimensionless": "adimensional",
+    "unknownUnit": "unidad no indicada",
+    "nonfinite": "Sin valor finito",
+    "unavailable": "No disponible",
+    "masked": "Sin muestra visible: enmascarada o inválida.",
+    "origin": "Coordenadas desde (1, 1), abajo a la izquierda."
+  },
   "tabs": {
     "data": "Datos",
     "appearance": "Apariencia",

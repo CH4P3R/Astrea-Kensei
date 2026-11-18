@@ -1,0 +1,26 @@
+.pixel-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  transform: translate3d(var(--pixel-x, 0px), var(--pixel-y, 0px), 0);
+  z-index: 40;
+  pointer-events: none;
+  display: grid;
+  gap: 5px;
+  width: max-content;
+  max-width: min(310px, calc(100vw - 16px));
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--hud-surface);
+  color: var(--hud-text);
+  box-shadow: 0 6px 22px #0006;
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.pixel-tooltip__observation, .pixel-tooltip__origin, .pixel-tooltip small { color: var(--hud-muted); }
+.pixel-tooltip__origin { font-size: 10px; }
+.pixel-tooltip dl { margin: 3px 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; }
+.pixel-tooltip dt { color: var(--hud-muted); }
+.pixel-tooltip dd { margin: 0; text-align: right; }

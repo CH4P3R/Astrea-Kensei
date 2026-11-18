@@ -4,6 +4,7 @@ import { chronologicalFrames } from '../config/comparison.js'
 import useProjectedImages from './useProjectedImages.js'
 import useImageAppearance from './useImageAppearance.js'
 import useBlinkPlayback from './useBlinkPlayback.js'
+import { projectionContextKey } from './projectionRefresh.js'
 
 // Keep the comparison's N-frame presentation out of the rest of the viewport.
 export default function useComparisonPresentation(comparison, observer, context, timestamp, fitsStatus) {
@@ -18,7 +19,10 @@ export default function useComparisonPresentation(comparison, observer, context,
         : !projections.ready ? 'inspector.compare.position'
           : !appearance.ready ? 'inspector.compare.processing'
             : !appearance.hasData ? 'inspector.compare.noData' : ''
-  const playback = useBlinkPlayback(frames, !reason)
+  const playback = useBlinkPlayback(frames, !reason, {
+    suspended: reason === 'inspector.compare.position' && context.mode === 'live',
+    contextKey: projectionContextKey(observer, context),
+  })
   const displayed = images.find((image) => image.metadata.id === playback.frameId) ?? images[0]
   const primaryProjection = projections.byId[images[0]?.metadata.id] ?? { ready: false, error: '', image: null }
   const frameImages = useMemo(() => images.map((image) => projections.byId[image.metadata.id])

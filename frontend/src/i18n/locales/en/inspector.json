@@ -1,5 +1,18 @@
 {
   "title": "Image inspector",
+  "pixel": {
+    "title": "Pixel information",
+    "coordinates": "Pixel ({{x}}, {{y}})",
+    "original": "Original value",
+    "processed": "Processed value",
+    "normalized": "Normalized value",
+    "dimensionless": "dimensionless",
+    "unknownUnit": "unit not supplied",
+    "nonfinite": "No finite value",
+    "unavailable": "Unavailable",
+    "masked": "No displayed sample: masked or invalid.",
+    "origin": "Coordinates start at (1, 1), bottom left."
+  },
   "tabs": {
     "data": "Data",
     "appearance": "Appearance",

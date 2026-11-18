@@ -52,7 +52,8 @@ export default function useImageAppearance(sources) {
   const display = useMemo(() => {
     const arrays = applied ?? sources.map((image) => image.pixels.raw)
     const range = displayRange(arrays)
-    return { pixels: arrays.map((raw) => normalizePixels(raw, range)), hasData: arrays.every((raw) => raw.some(Number.isFinite)) }
+    return { pixels: arrays.map((raw) => ({ raw, ...normalizePixels(raw, range) })),
+      hasData: arrays.every((raw) => raw.some(Number.isFinite)) }
   }, [sources, applied])
   const change = useCallback((name, value) => setSettings((previous) => ({ ...previous, [name]: value })), [])
   const process = useCallback((name, value) => setProcessing((previous) => ({ ...previous, [name]: value })), [])

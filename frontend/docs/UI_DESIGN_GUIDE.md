@@ -383,7 +383,15 @@ En Apariencia, la paleta ofrece Escala de grises, Color, Ámbar, Hielo, Violeta-
 
 La búsqueda inicial sigue limitada a una observación. Comparar solicita hasta 50 candidatas por una operación distinta y explica `has_more`. Excluye A, tiempos ausentes o equivalentes y detectores incompatibles con el criterio. Cargar o cancelar B conserva A. El filtro por longitud de onda específica no se presenta: la API aún no proporciona ese contrato.
 
-Ambas imágenes usan sus propias mallas WCS y un intervalo de intensidad compartido. A define la orientación frontal y B conserva su geometría para mantener la alineación celeste. Los píxeles originales se conservan. Las opciones de procesamiento se aplican conjuntamente y solo habilitan reproducción cuando ambas terminan y tienen píxeles válidos. Las unidades originales deben ser conocidas y compatibles; el modo señal/ruido se identifica como adimensional. Una posición caducada detiene la reproducción y deja de dibujarse.
+Las imágenes usan sus propias mallas WCS y un intervalo de intensidad compartido. A define la orientación frontal y las demás conservan su geometría para mantener la alineación celeste. Los píxeles originales se conservan. Las opciones de procesamiento se aplican conjuntamente y solo habilitan reproducción cuando terminan y tienen píxeles válidos. Las unidades originales deben ser conocidas y compatibles; el modo señal/ruido se identifica como adimensional.
+
+Las posiciones en vivo se renuevan antes de vencer, conservando la proyección válida mientras llega su reemplazo. Su vigencia utiliza el reloj actual, no el último tick del texto horario. Renovar posiciones no descarga otra vez los píxeles ni recrea textura/material. Una interrupción real de las posiciones suspende el avance, conserva la intención de reproducción y permite pausar explícitamente; al recuperarse puede continuar sin otro Play. Un cambio de ubicación/fecha o un bloqueo de datos sí detiene la reproducción. Nunca prolongar artificialmente una proyección caducada para ocultar un fallo.
+
+### Información del píxel bajo el cursor
+
+El tooltip aparece solo al intersectar la imagen mostrada y sigue al cursor, sin capturar clics ni arrastres. Al salir de la imagen, entrar en los controles, ocultar la capa o arrastrar, desaparece. Con el cursor quieto se actualiza al cambiar de fotograma o al moverse la imagen. Las actualizaciones del puntero se aíslan del estado del workspace para no volver a renderizar toda la escena.
+
+Muestra la identidad y fecha UTC de la observación, coordenadas del píxel del recorte (base 1, origen abajo a la izquierda), valor original y unidad, valor procesado si corresponde y valor normalizado de visualización. S/N se identifica como adimensional; los datos ausentes y no finitos no se convierten en cero. Los valores se leen de los arrays cargados, conservando el original y el resultado real del procesamiento. No se reconstruyen valores científicos a partir de la normalización ni se atribuyen flags, incertidumbres o coordenadas celestes exactas que no están disponibles para ese píxel.
 
 ### Imagen completa y movimiento
 

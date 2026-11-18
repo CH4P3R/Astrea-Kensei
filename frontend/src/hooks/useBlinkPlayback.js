@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BLINK_MAX_SECONDS, BLINK_MIN_SECONDS, BLINK_STEP_SECONDS, nextFrameId } from '../config/comparison.js'
 
-export default function useBlinkPlayback(frames, ready) {
-  const key = JSON.stringify(frames.map(({ id }) => id))
+export default function useBlinkPlayback(frames, ready, { suspended = false, contextKey = null } = {}) {
+  const sequenceKey = JSON.stringify(frames.map(({ id }) => id))
+  const sequence = useMemo(() => JSON.parse(sequenceKey).map((id) => ({ id })), [sequenceKey])
+  const key = JSON.stringify([sequenceKey, contextKey])
   const referenceId = frames.find(({ reference }) => reference)?.id ?? frames[0]?.id ?? null
   const [state, setState] = useState({ key: null, playing: false, frameId: null })
   const [interval, setIntervalValue] = useState(1)
-  if (state.key !== key || (!ready && state.playing)) {
+  if (state.key !== key || (!ready && !suspended && state.playing)) {
     setState({ key, playing: false, frameId: state.key === key ? state.frameId : referenceId })
   }
-  const playing = state.key === key && ready && frames.length > 1 && state.playing
-  const frameId = state.key === key && ready ? state.frameId ?? referenceId : referenceId
+  // A temporary projection gap suspends advancement, not the user's intent.
+  // Keep Pause available while waiting; no expired frame is made renderable.
+  const playing = state.key === key && (ready || suspended) && frames.length > 1 && state.playing
+  const frameId = state.key === key && (ready || suspended) ? state.frameId ?? referenceId : referenceId
   const index = Math.max(0, frames.findIndex(({ id }) => id === frameId))
   const frame = frames[index]?.label ?? 'A'
   const pause = useCallback(() => setState((previous) => ({ ...previous, playing: false })), [])
@@ -36,13 +40,18 @@ export default function useBlinkPlayback(frames, ready) {
   }, [])
 
   useEffect(() => {
-    if (!playing) return
+    if (!playing || !ready) return
     const timer = window.setInterval(() => setState((previousState) => ({ ...previousState,
-      frameId: nextFrameId(frames, previousState.frameId) })), interval * 1000)
+      frameId: nextFrameId(sequence, previousState.frameId) })), interval * 1000)
+    return () => window.clearInterval(timer)
+  }, [playing, ready, interval, sequence])
+
+  useEffect(() => {
+    if (!playing) return
     const hide = () => { if (document.hidden) pause() }
     document.addEventListener('visibilitychange', hide)
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', hide) }
-  }, [playing, interval, pause, frames])
+    return () => document.removeEventListener('visibilitychange', hide)
+  }, [playing, pause])
 
-  return { frameId, frame, index, playing, interval, setInterval, pause, show, toggle, next, previous }
+  return { frameId, frame, index, playing, waiting: playing && !ready, interval, setInterval, pause, show, toggle, next, previous }
 }
