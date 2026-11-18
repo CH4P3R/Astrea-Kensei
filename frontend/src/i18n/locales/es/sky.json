@@ -14,13 +14,16 @@
   "retry": "Volver a cargar estrellas",
   "surface": {
     "label": "Mostrar superficie central",
-    "help": "Cuadrícula y círculos suaves con un fondo oscuro ajustable. La superficie se atenúa al ampliar.",
     "darkness": {
       "label": "Oscuridad del suelo",
       "help": "Ajusta la oscuridad del fondo sin cambiar la cuadrícula ni los círculos."
     }
   },
   "dust": { "label": "Fondo difuso" },
+  "deepSky": {
+    "label": "Nebulosas y cúmulos",
+    "help": "Seis ilustraciones suaves: Orión, Laguna, Carina, Norteamérica, Pléyades y Omega Centauri. Sus centros siguen coordenadas de catálogo, tu ubicación y la hora. Las formas, colores y extensiones son aproximados, no imágenes científicas. Se ocultan al inspeccionar FITS o ampliar mucho."
+  },
   "solar": {
     "label": "Sol y Luna",
     "help": "Posiciones y tamaños angulares calculados para tu ubicación y la hora seleccionada. La Luna muestra su fase e iluminación. No se simula la refracción atmosférica.",
@@ -33,7 +36,7 @@
     "locationRequired": "Define tu ubicación en Ubicación para orientar estas guías en tu cielo.",
     "constellations": {
       "label": "Constelaciones (88)",
-      "help": "Líneas de las 88 constelaciones y nombres de las figuras hacia las que miras. Se orientan según tu ubicación y la hora seleccionada."
+      "help": "Líneas y nombres de las 88 constelaciones que aparecen juntos hacia donde miras y se atenúan al ampliar. Se orientan según tu ubicación y la hora seleccionada."
     },
     "ecliptic": {
       "label": "Eclíptica",

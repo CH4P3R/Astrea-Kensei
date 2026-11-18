@@ -11,13 +11,13 @@ import Stars from '../elements/Stars.jsx'
 import HorizonSurface from '../elements/HorizonSurface.jsx'
 import ImageLoadingMarker from '../elements/ImageLoadingMarker.jsx'
 import CompassTracking from './CompassTracking.jsx'
-import ConstellationLines from '../elements/ConstellationLines.jsx'
+import Constellations from '../elements/Constellations.jsx'
 import Ecliptic from '../elements/Ecliptic.jsx'
 import EquatorialGrid from '../elements/EquatorialGrid.jsx'
 import SolarSystem from '../elements/SolarSystem.jsx'
-import ConstellationNames from '../elements/ConstellationNames.jsx'
+import DeepSkyObjects from '../elements/DeepSkyObjects.jsx'
 
-export default function SkyScene({ observer, fits, stars, solarSystem, surfaceVisible, groundOpacity, dustVisible, skyGuides = {}, timestamp, onSkyClick,
+export default function SkyScene({ observer, fits, stars, solarSystem, surfaceVisible, groundOpacity, dustVisible, deepSkyVisible, skyGuides = {}, timestamp, onSkyClick,
   frameImages, viewport, focusVersion, layers, appearance, frameId, onImageZoom, searchDirection, compassMarkerRef }) {
   const { gl } = useThree()
   const { setTextureLimit } = fits
@@ -39,8 +39,8 @@ export default function SkyScene({ observer, fits, stars, solarSystem, surfaceVi
         <EquatorialFrame observer={observer} timestamp={timestamp}>
           <CelestialSphere />
           {dustVisible && <SkyDust />}
-          {observer && skyGuides.constellations && <ConstellationLines />}
-          {observer && skyGuides.constellations && <ConstellationNames />}
+          {observer && deepSkyVisible && <DeepSkyObjects visible={!fits.active} />}
+          {observer && skyGuides.constellations && <Constellations />}
           {observer && skyGuides.ecliptic && <Ecliptic timestamp={timestamp} />}
           {observer && skyGuides.equatorial && <EquatorialGrid />}
         </EquatorialFrame>

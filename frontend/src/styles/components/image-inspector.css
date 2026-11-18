@@ -105,7 +105,7 @@
 .inspector-toggle label { display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 34px; }
 .inspector-toggle input { accent-color: var(--hud-focus); width: 16px; height: 16px; }
 .intensity-legend { display: flex; justify-content: space-between; margin: 12px 0; padding-top: 16px; position: relative; font-size: 11px; color: var(--hud-muted); }
-.intensity-legend::before { content: ''; position: absolute; inset: 0 0 auto; height: 8px; border-radius: 5px; background: linear-gradient(90deg, #040514, #2659b3, #73d9cc, #fac273, #fff); }
+.intensity-legend::before { content: ''; position: absolute; inset: 0 0 auto; height: 8px; border-radius: 5px; background: var(--intensity-gradient); box-shadow: inset 0 0 0 1px rgb(128 128 128 / 20%); }
 .observation-list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 6px; }
 .observation-list button { display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; }
 .image-inspector button[aria-pressed='true'] { background: var(--hud-hover); color: var(--hud-focus); }

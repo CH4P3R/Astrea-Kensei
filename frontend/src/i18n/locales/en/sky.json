@@ -14,13 +14,16 @@
   "retry": "Reload stars",
   "surface": {
     "label": "Show central surface",
-    "help": "A subtle grid and rings with an adjustable dark background. The surface fades when zooming in.",
     "darkness": {
       "label": "Ground darkness",
       "help": "Adjust the background darkness without changing the grid or rings."
     }
   },
   "dust": { "label": "Diffuse background" },
+  "deepSky": {
+    "label": "Nebulae and clusters",
+    "help": "Six soft illustrations: Orion, Lagoon, Carina, North America, Pleiades and Omega Centauri. Their centers follow catalog coordinates, your location and the time. Shapes, colors and extents are approximate, not scientific images. They hide during FITS inspection or strong zoom."
+  },
   "solar": {
     "label": "Sun and Moon",
     "help": "Positions and angular sizes calculated for your location and the selected time. The Moon shows its phase and lighting. Atmospheric refraction is not simulated.",
@@ -33,7 +36,7 @@
     "locationRequired": "Set your position in Location to orient these guides in your sky.",
     "constellations": {
       "label": "Constellations (88)",
-      "help": "Lines for all 88 constellations and names of the figures you are looking toward. They follow your location and the selected time."
+      "help": "Lines and names for all 88 constellations appear together toward your view and fade when zooming in. They follow your location and the selected time."
     },
     "ecliptic": {
       "label": "Ecliptic",

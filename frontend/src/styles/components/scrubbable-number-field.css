@@ -1,0 +1,19 @@
+.scrubbable-number__heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.context-panel .scrubbable-number__heading label { min-width: 0; margin: 0; }
+.context-panel .scrubbable-number__heading .input-help { width: 32px; min-width: 32px; height: 36px; min-height: 36px; margin: 0; padding: 0; }
+.scrubbable-number__control { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: stretch; gap: 2px; }
+.context-panel .scrubbable-number__control .scrubbable-number__step {
+  width: 44px; min-width: 0; min-height: 44px; margin: 0; padding: 0; text-align: center; font-size: 1.15rem;
+}
+.context-panel .scrubbable-number__control .scrubbable-number__input {
+  width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 8px 4px;
+  text-align: center; font-variant-numeric: tabular-nums; appearance: textfield; touch-action: pan-y;
+}
+.scrubbable-number__input::-webkit-inner-spin-button,
+.scrubbable-number__input::-webkit-outer-spin-button { margin: 0; appearance: none; }
+.scrubbable-number__input[readonly] { cursor: ew-resize; user-select: none; }
+.scrubbable-number__input:not([readonly]) { cursor: text; user-select: text; }
+.scrubbable-number__control[data-dragging] .scrubbable-number__input { cursor: ew-resize; }
+.scrubbable-number__input:focus-visible { outline: 2px solid var(--hud-focus); outline-offset: -2px; }
+.scrubbable-number__input:disabled { cursor: not-allowed; }
+.scrubbable-number__instructions { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

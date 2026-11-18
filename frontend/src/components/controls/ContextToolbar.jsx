@@ -10,7 +10,8 @@ import SkyCompass from './SkyCompass.jsx'
 
 const sections = ['time', 'location', 'search', 'sky']
 export default function ContextToolbar({ clock, location, fits, menu, warning, share, stars, surfaceVisible, setSurfaceVisible, dustVisible, setDustVisible,
-  skyGuides, setSkyGuides, solarSystem, solarVisible, setSolarVisible, compassMarkerRef, groundOpacity, setGroundOpacity }) {
+  skyGuides, setSkyGuides, solarSystem, solarVisible, setSolarVisible, compassMarkerRef, groundOpacity, setGroundOpacity,
+  deepSkyVisible, setDeepSkyVisible }) {
   const { t, date } = useTranslation()
   const options = sections.map((id) => ({ id, label: t(`${id}.title`) }))
   const { active, toggle } = menu
@@ -44,6 +45,7 @@ export default function ContextToolbar({ clock, location, fits, menu, warning, s
           {id === 'sky' && <SkyControls stars={stars} surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
             groundOpacity={groundOpacity} setGroundOpacity={setGroundOpacity}
             dustVisible={dustVisible} setDustVisible={setDustVisible} observer={location.observer}
+            deepSkyVisible={deepSkyVisible} setDeepSkyVisible={setDeepSkyVisible}
             skyGuides={skyGuides} setSkyGuides={setSkyGuides}
             solarSystem={solarSystem} solarVisible={solarVisible} setSolarVisible={setSolarVisible} />}
         </ContextPanel>)}

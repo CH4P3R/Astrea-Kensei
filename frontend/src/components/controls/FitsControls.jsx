@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import Tooltip from '../common/Tooltip.jsx'
 import PanelContent from '../common/PanelContent.jsx'
-import InputField from '../common/InputField.jsx'
+import ScrubbableNumberField from '../common/ScrubbableNumberField.jsx'
 import RangeField from '../common/RangeField.jsx'
 import { coordinateError, cutoutSizeError } from '../../config/search.js'
 import useTranslation from '../../i18n/useTranslation.js'
@@ -55,14 +55,14 @@ export default function FitsControls({ fits, observer, warning, share }) {
       {share && <ShareLink {...share} />}
     </>}>
     <form id={formId} onSubmit={submit}>
-      <InputField label={t('search.fields.ra.label')} name="ra" type="number" min="0" max="360" step="any" required
+      <ScrubbableNumberField label={t('search.fields.ra.label')} name="ra" min={0} max={360} wrap required
         value={ra} disabled={busy} placeholder={t('search.fields.ra.placeholder')}
         help={t('search.fields.ra.help')}
-        onChange={(event) => edit('ra', event.target.value)} />
-      <InputField label={t('search.fields.dec.label')} name="dec" type="number" min="-90" max="90" step="any" required
+        onValueChange={(value) => edit('ra', value)} />
+      <ScrubbableNumberField label={t('search.fields.dec.label')} name="dec" min={-90} max={90} required
         value={dec} disabled={busy} placeholder={t('search.fields.dec.placeholder')}
         help={t('search.fields.dec.help')}
-        onChange={(event) => edit('dec', event.target.value)} />
+        onValueChange={(value) => edit('dec', value)} />
       {validation && <p role="alert">{t(validation)}</p>}
     </form>
     {warning === 'share.notices.invalid' && <p role="status">{t(warning)}</p>}

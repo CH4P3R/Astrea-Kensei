@@ -48,6 +48,10 @@
     "palette": "Palette",
     "gray": "Grayscale",
     "color": "Intensity false color",
+    "amber": "Amber",
+    "ice": "Ice",
+    "violetGold": "Violet–gold",
+    "inverse": "Inverted grayscale",
     "exposure": "Brightness",
     "opacity": "Opacity",
     "restore": "Reset appearance",
@@ -57,9 +61,9 @@
     "signal_to_noise": "Show signal-to-noise",
     "loading": "Applying processing to the images…",
     "failed": "The requested processing was not applied. Original data are displayed.",
-    "legend": "Intensity scale: faint to bright",
-    "faint": "Faint",
-    "bright": "Bright"
+    "legend": "Displayed intensity scale: low to high",
+    "faint": "Low intensity",
+    "bright": "High intensity"
   },
   "compare": {
     "noData": "An image has no valid pixels to display. Review processing or choose another observation.",

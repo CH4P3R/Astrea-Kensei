@@ -5,6 +5,10 @@
   "navigation": "Contexto y preparación",
   "localTime": "Hora local del cielo mostrado",
   "fieldHelp": "Información sobre {{label}}",
+  "number": {
+    "decrease": "Disminuir {{label}}", "increase": "Aumentar {{label}}",
+    "instructions": "Pulsa para escribir o arrastra hacia los lados. Las flechas ajustan el valor; Intro permite escribir. Mantén Mayús para ajustes más precisos."
+  },
   "language": { "label": "Idioma", "current": "Cambiar idioma, actual: {{language}}" },
   "select": { "placeholder": "Selecciona una opción", "empty": "No hay opciones disponibles" }
 }

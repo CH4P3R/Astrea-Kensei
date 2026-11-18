@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import PanelContent from '../common/PanelContent.jsx'
 import InputField from '../common/InputField.jsx'
 import useTranslation from '../../i18n/useTranslation.js'
+import '../../styles/components/time-controls.css'
 
 export default function TimeControls({ clock }) {
   const { t } = useTranslation()
@@ -18,7 +19,11 @@ export default function TimeControls({ clock }) {
     setError('')
     clock.apply(timestamp)
   }
-  return <PanelContent title={t('time.title')} header={<p>{t(clock.paused ? 'time.status.paused' : 'time.status.live')}</p>}
+  return <PanelContent title={t('time.title')} header={
+    <p className="time-status" data-live={!clock.paused}>
+      <span className="time-status__indicator" aria-hidden="true" />
+      {t(clock.paused ? 'time.status.paused' : 'time.status.live')}
+    </p>}
     footer={<>
       <button type="button" onClick={clock.paused ? clock.goLive : clock.pause}>
         {t(clock.paused ? 'time.actions.goLive' : 'time.actions.pause')}

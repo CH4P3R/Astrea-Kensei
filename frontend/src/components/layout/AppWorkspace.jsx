@@ -11,6 +11,7 @@ import Tooltip from '../common/Tooltip.jsx'
 import StatusNotice from '../common/StatusNotice.jsx'
 import { cutoutSizeError } from '../../config/search.js'
 import { SKY_DUST } from '../../config/skyDust.js'
+import { DEEP_SKY } from '../../config/deepSky.js'
 import useStars from '../../hooks/useStars.js'
 import useSolarSystem from '../../hooks/useSolarSystem.js'
 import useTranslation from '../../i18n/useTranslation.js'
@@ -54,6 +55,7 @@ export default function AppWorkspace({ onOpenAbout }) {
   const [surfaceVisible, setSurfaceVisible] = useState(true)
   const [groundOpacity, setGroundOpacity] = useGroundOpacity()
   const [dustVisible, setDustVisible] = useState(SKY_DUST.enabled)
+  const [deepSkyVisible, setDeepSkyVisible] = useState(DEEP_SKY.enabled)
   const [skyGuides, setSkyGuides] = useState({ constellations: true, ecliptic: false, equatorial: false })
   const [notice, setNotice] = useState(null)
   const [tab, setTab] = useState('data')
@@ -137,6 +139,7 @@ export default function AppWorkspace({ onOpenAbout }) {
       <div className="scene-layer" aria-label={t('common.scene')}>
         <Canvas orthographic camera={{ position: [0, 0, 0], near: 0.01, far: 250 }}>
           <SkyScene observer={observer} fits={fits} stars={stars} solarSystem={solarSystem} surfaceVisible={surfaceVisible} dustVisible={dustVisible} skyGuides={skyGuides}
+            deepSkyVisible={deepSkyVisible}
             groundOpacity={groundOpacity}
             timestamp={clock.timestamp} onSkyClick={onSkyClick} frameImages={frameImages} viewport={viewport} focusVersion={focusVersion}
             layers={layers} appearance={appearance} frameId={playback.frameId}
@@ -149,6 +152,7 @@ export default function AppWorkspace({ onOpenAbout }) {
           stars={stars} surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
           groundOpacity={groundOpacity} setGroundOpacity={setGroundOpacity}
           dustVisible={dustVisible} setDustVisible={setDustVisible}
+          deepSkyVisible={deepSkyVisible} setDeepSkyVisible={setDeepSkyVisible}
           skyGuides={skyGuides} setSkyGuides={setSkyGuides}
           solarSystem={solarSystem} solarVisible={solarVisible} setSolarVisible={setSolarVisible}
           compassMarkerRef={compassMarkerRef} />

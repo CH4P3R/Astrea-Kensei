@@ -8,7 +8,7 @@ import '../../styles/components/sky-controls.css'
 const guideOptions = ['constellations', 'ecliptic', 'equatorial']
 
 export default function SkyControls({ stars, surfaceVisible, setSurfaceVisible, groundOpacity, setGroundOpacity, dustVisible, setDustVisible,
-  observer, skyGuides, setSkyGuides, solarSystem, solarVisible, setSolarVisible }) {
+  observer, skyGuides, setSkyGuides, solarSystem, solarVisible, setSolarVisible, deepSkyVisible, setDeepSkyVisible }) {
   const { t, number } = useTranslation()
   const groundPercentage = number(groundOpacity, { style: 'percent', maximumFractionDigits: 0 })
   const status = stars.status === 'idle' ? t('sky.status.idle')
@@ -20,13 +20,18 @@ export default function SkyControls({ stars, surfaceVisible, setSurfaceVisible, 
     header={<p className="context-note" role="status">{status}</p>}
     footer={stars.status === 'error' && <button type="button" onClick={stars.retry}>{t('sky.retry')}</button>}>
     <CheckboxField label={t('sky.surface.label')} checked={surfaceVisible}
-      onChange={(event) => setSurfaceVisible(event.target.checked)} aria-describedby="sky-surface-help" />
-    <p id="sky-surface-help" className="context-note">{t('sky.surface.help')}</p>
+      onChange={(event) => setSurfaceVisible(event.target.checked)} />
     <RangeField label={t('sky.surface.darkness.label')} help={t('sky.surface.darkness.help')}
       min={0} max={1} step={0.01} value={groundOpacity} displayValue={groundPercentage}
       aria-valuetext={groundPercentage} disabled={!surfaceVisible} onChange={setGroundOpacity} />
     <CheckboxField label={t('sky.dust.label')} checked={dustVisible}
       onChange={(event) => setDustVisible(event.target.checked)} />
+    <div className="sky-guide-option">
+      <CheckboxField label={t('sky.deepSky.label')} checked={deepSkyVisible} disabled={!observer}
+        aria-describedby={`sky-deep-sky-help${observer ? '' : ' sky-guides-location-help'}`}
+        onChange={(event) => setDeepSkyVisible(event.target.checked)} />
+      <HelpButton id="sky-deep-sky-help" label={t('sky.deepSky.label')} message={t('sky.deepSky.help')} />
+    </div>
     <div className="sky-guide-option">
       <CheckboxField label={t('sky.solar.label')} checked={solarVisible} disabled={!observer}
         aria-describedby={`sky-solar-help${observer ? '' : ' sky-guides-location-help'}`}

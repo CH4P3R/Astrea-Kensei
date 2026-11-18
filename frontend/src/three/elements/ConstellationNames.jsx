@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { BufferAttribute, CanvasTexture, DynamicDrawUsage, InstancedBufferAttribute,
-  InstancedBufferGeometry, LinearFilter, MathUtils, Matrix4, ShaderMaterial, SRGBColorSpace, Vector2, Vector3 } from 'three'
-import catalogue from '../../data/constellations/lines.json'
-import { SKY } from '../../config/sky.js'
-import { constellationLabelOpacity, constellationLabels, selectConstellationLabels } from '../core/constellationLabelUtils.js'
+  InstancedBufferGeometry, LinearFilter, Matrix4, ShaderMaterial, SRGBColorSpace, Vector2, Vector3 } from 'three'
+import { constellationLabelOpacity, selectConstellationLabels, updateConstellationOpacities } from '../core/constellationLabelUtils.js'
 import { baseOrthographicZoom } from '../core/skyViewUtils.js'
 
 const ignoreRaycast = () => {}
@@ -14,7 +12,7 @@ const cellWidth = 256
 const cellHeight = labelHeight * atlasScale
 const columns = 4
 
-function createResources(labels) {
+function createResources(labels, opacities) {
   const canvas = document.createElement('canvas')
   canvas.width = columns * cellWidth
   canvas.height = Math.ceil(labels.length / columns) * cellHeight
@@ -56,7 +54,7 @@ function createResources(labels) {
   geometry.setAttribute('anchor', new InstancedBufferAttribute(anchors, 3))
   geometry.setAttribute('atlasRect', new InstancedBufferAttribute(rects, 4))
   geometry.setAttribute('labelWidth', new InstancedBufferAttribute(widths, 1))
-  geometry.setAttribute('labelOpacity', new InstancedBufferAttribute(new Float32Array(labels.length), 1).setUsage(DynamicDrawUsage))
+  geometry.setAttribute('labelOpacity', new InstancedBufferAttribute(opacities, 1).setUsage(DynamicDrawUsage))
   geometry.instanceCount = labels.length
   const material = new ShaderMaterial({
     uniforms: { atlas: { value: atlas }, viewport: { value: new Vector2(1, 1) } },
@@ -96,14 +94,19 @@ function createResources(labels) {
 function updateLabels(current, labels, camera, size, mesh, viewMatrix, point, delta) {
   const zoom = camera.zoom / baseOrthographicZoom(size.width, size.height)
   const targetOpacity = constellationLabelOpacity(zoom)
+  const opacity = current.geometry.attributes.labelOpacity
   mesh.visible = targetOpacity > 0
-  if (!mesh.visible) return
+  if (!mesh.visible) {
+    current.selected.length = 0
+    updateConstellationOpacities(current.candidates, current.selected, opacity.array, 0, delta)
+    opacity.needsUpdate = true
+    return
+  }
   // Parent matrices include date and observer orientation, which must be current
   // before CPU visibility selection as well as before the background render.
   mesh.updateWorldMatrix(true, false)
   camera.updateMatrixWorld()
   viewMatrix.multiplyMatrices(camera.matrixWorldInverse, mesh.matrixWorld)
-  const opacity = current.geometry.attributes.labelOpacity
   current.material.uniforms.viewport.value.set(size.width, size.height)
   for (let index = 0; index < labels.length; index += 1) {
     const candidate = current.candidates[index]
@@ -114,32 +117,21 @@ function updateLabels(current, labels, camera, size, mesh, viewMatrix, point, de
     candidate.y = (1 - point.y) * size.height / 2
     // A small retention preference keeps nearly tied labels from flickering.
     candidate.score = point.x * point.x + point.y * point.y - (candidate.selected ? 0.05 : 0)
-    candidate.selected = false
   }
   selectConstellationLabels(current.candidates, size.width, size.height, current.selected, current.scratch)
-  for (const candidate of current.selected) candidate.selected = true
-  let visible = false
-  for (const candidate of current.candidates) {
-    // Remove rejected labels immediately so fading cannot violate the overlap
-    // and count limits. Newly selected labels still have a soft entrance.
-    const value = candidate.selected
-      ? MathUtils.damp(opacity.array[candidate.index], targetOpacity, 12, delta) : 0
-    opacity.array[candidate.index] = value
-    visible ||= value > 0.005
-  }
+  mesh.visible = updateConstellationOpacities(current.candidates, current.selected, opacity.array, targetOpacity, delta)
   opacity.needsUpdate = true
-  mesh.visible = visible
 }
 
-export default function ConstellationNames() {
+export default function ConstellationNames({ labels, visibility }) {
   const mesh = useRef(null)
   const resources = useRef(null)
-  const labels = useMemo(() => constellationLabels(catalogue.features, SKY.radius), [])
   const viewMatrix = useMemo(() => new Matrix4(), [])
   const point = useMemo(() => new Vector3(), [])
 
   useEffect(() => {
-    const next = createResources(labels)
+    const opacities = visibility.current
+    const next = createResources(labels, opacities)
     resources.current = next
     if (!next) return
     mesh.current.geometry = next.geometry
@@ -148,15 +140,16 @@ export default function ConstellationNames() {
       next.geometry.dispose()
       next.material.dispose()
       next.atlas.dispose()
+      opacities.fill(0)
       resources.current = null
     }
-  }, [labels])
+  }, [labels, visibility])
 
   useFrame(({ camera, size }, delta) => {
     const current = resources.current
     if (!current) return
     updateLabels(current, labels, camera, size, mesh.current, viewMatrix, point, delta)
-  })
+  }, -0.5)
 
   // One texture and one instanced draw call for every label; no DOM overlays,
   // per-frame React updates, downloaded fonts, or individual sprite textures.

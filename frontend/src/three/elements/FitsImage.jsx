@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { BufferAttribute, BufferGeometry, DataTexture, DoubleSide, FloatType, NearestFilter, RedFormat, ShaderMaterial } from 'three'
 import { SKY } from '../../config/sky.js'
+import { IMAGE_PALETTE_GLSL, imagePaletteIndex } from '../../config/appearance.js'
 import { sampleWindow } from '../core/imageDataUtils.js'
 
 function createResources(active, pixels) {
@@ -21,18 +22,13 @@ function createResources(active, pixels) {
     vertexShader: `varying vec2 imageUv;
       void main() { imageUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `uniform sampler2D pixels; uniform float exposure; uniform float opacity; uniform float palette; varying vec2 imageUv;
+      ${IMAGE_PALETTE_GLSL}
       void main() {
         float value = texture2D(pixels, imageUv).r;
         if (value < 0.0) discard;
         float scaled = value * 10.0 * exp2(exposure);
         float intensity = clamp(log(scaled + sqrt(scaled * scaled + 1.0)) / 2.99822295, 0.0, 1.0);
-        vec3 color = vec3(intensity);
-        if (palette > 0.5) {
-          color = mix(vec3(0.015, 0.02, 0.08), vec3(0.15, 0.35, 0.7), smoothstep(0.0, 0.3, intensity));
-          color = mix(color, vec3(0.45, 0.85, 0.8), smoothstep(0.25, 0.55, intensity));
-          color = mix(color, vec3(0.98, 0.76, 0.45), smoothstep(0.5, 0.8, intensity));
-          color = mix(color, vec3(1.0), smoothstep(0.8, 1.0, intensity));
-        }
+        vec3 color = imagePalette(intensity, palette);
         gl_FragColor = vec4(color, opacity);
         #include <colorspace_fragment>
       }`,
@@ -70,7 +66,7 @@ export default function FitsImage({ active, pixels = active.pixels, settings, ti
     currentResources.material.visible = visible && now >= current.sample_times_ms[0] && now <= current.sample_times_ms.at(-1)
     currentResources.material.uniforms.exposure.value = settings?.exposure ?? 0
     currentResources.material.uniforms.opacity.value = settings?.opacity ?? 1
-    currentResources.material.uniforms.palette.value = settings?.palette === 'color' ? 1 : 0
+    currentResources.material.uniforms.palette.value = imagePaletteIndex(settings?.palette)
     const [a, b, fraction] = sampleWindow(current.sample_times_ms, now)
     const positions = currentResources.geometry.attributes.position
     const first = current.directions[a]

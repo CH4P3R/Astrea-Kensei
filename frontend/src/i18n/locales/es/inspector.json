@@ -48,6 +48,10 @@
     "palette": "Paleta",
     "gray": "Escala de grises",
     "color": "Falso color de intensidad",
+    "amber": "Ámbar",
+    "ice": "Hielo",
+    "violetGold": "Violeta–dorado",
+    "inverse": "Grises invertidos",
     "exposure": "Brillo",
     "opacity": "Opacidad",
     "restore": "Restaurar apariencia",
@@ -57,9 +61,9 @@
     "signal_to_noise": "Mostrar señal/ruido",
     "loading": "Aplicando procesamiento a las imágenes…",
     "failed": "No se aplicó el procesamiento solicitado. Se muestran los datos originales.",
-    "legend": "Escala de intensidad: de débil a brillante",
-    "faint": "Débil",
-    "bright": "Brillante"
+    "legend": "Escala de intensidad visualizada: de baja a alta",
+    "faint": "Intensidad baja",
+    "bright": "Intensidad alta"
   },
   "compare": {
     "noData": "Alguna imagen no tiene píxeles válidos para visualizar. Revisa el procesamiento o elige otra observación.",

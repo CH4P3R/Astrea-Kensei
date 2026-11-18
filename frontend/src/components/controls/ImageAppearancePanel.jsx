@@ -5,21 +5,24 @@ import Select from '../common/Select.jsx'
 import RangeField from '../common/RangeField.jsx'
 import CheckboxField from '../common/CheckboxField.jsx'
 import useTranslation from '../../i18n/useTranslation.js'
+import { IMAGE_PALETTES, imagePaletteGradient, imagePaletteIndex } from '../../config/appearance.js'
 
 export default function ImageAppearancePanel({ appearance }) {
   const { t, number } = useTranslation()
   const id = useId()
+  const palette = IMAGE_PALETTES[imagePaletteIndex(appearance.settings.palette)].id
   return <PanelContent title={t('inspector.tabs.appearance')}
     footer={<button type="button" onClick={appearance.restore}>{t('inspector.appearance.restore')}</button>}>
     <section className="inspector-section">
       <h3>{t('inspector.appearance.visual')}</h3>
       <div className="inspector-field-heading"><label htmlFor={id}>{t('inspector.appearance.palette')}</label>
         <HelpButton label={t('inspector.appearance.palette')} message={t('inspector.help.palette')} /></div>
-      <Select id={id} label={t('inspector.appearance.palette')} value={appearance.settings.palette}
-        onChange={(value) => appearance.change('palette', value)} options={['gray', 'color'].map((value) => ({ value, label: t(`inspector.appearance.${value}`) }))} />
-      {appearance.settings.palette === 'color' && <div className="intensity-legend" role="img" aria-label={t('inspector.appearance.legend')}>
+      <Select id={id} label={t('inspector.appearance.palette')} value={palette}
+        onChange={(value) => appearance.change('palette', value)} options={IMAGE_PALETTES.map(({ id: value }) => ({ value, label: t(`inspector.appearance.${value}`) }))} />
+      <div className="intensity-legend" role="img" aria-label={`${t(`inspector.appearance.${palette}`)}: ${t('inspector.appearance.legend')}`}
+        style={{ '--intensity-gradient': imagePaletteGradient(palette) }}>
         <span>{t('inspector.appearance.faint')}</span><span>{t('inspector.appearance.bright')}</span>
-      </div>}
+      </div>
       <RangeField label={t('inspector.appearance.exposure')} min={-3} max={3} step={0.1}
         value={appearance.settings.exposure} displayValue={`${number(appearance.settings.exposure, { maximumFractionDigits: 1 })} EV`}
         onChange={(value) => appearance.change('exposure', value)} />

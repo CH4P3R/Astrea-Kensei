@@ -5,6 +5,10 @@
   "navigation": "Context and preparation",
   "localTime": "Local time of the displayed sky",
   "fieldHelp": "Information about {{label}}",
+  "number": {
+    "decrease": "Decrease {{label}}", "increase": "Increase {{label}}",
+    "instructions": "Click to type or drag left or right. Arrow keys adjust the value; Enter starts typing. Hold Shift for finer adjustments."
+  },
   "language": { "label": "Language", "current": "Change language, current: {{language}}" },
   "select": { "placeholder": "Select an option", "empty": "No options available" }
 }

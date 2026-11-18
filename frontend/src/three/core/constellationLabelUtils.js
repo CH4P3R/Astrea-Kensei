@@ -1,5 +1,7 @@
-import { equatorialPoint } from './skyGuideUtils.js'
+import { constellationSegments, equatorialPoint } from './skyGuideUtils.js'
 import { constellationNames } from '../../data/constellations/names.js'
+
+export const CONSTELLATION_LABEL_OPACITY = 0.76
 
 // Average directions, not RA values: a figure across 0h must not move to 12h.
 // Repeated vertices in closed figures or several paths receive no extra weight.
@@ -30,8 +32,23 @@ export function constellationLabels(features, radius = 1) {
       const ra = (Math.atan2(-position[0], -position[2]) * 180 / Math.PI + 360) % 360
       text += ra < 250 ? ' Caput' : ' Cauda'
     }
-    return { id: `${feature.id}-${index}`, constellation: feature.id, text, position }
+    return { id: `${feature.id}-${index}`, featureIndex: index, constellation: feature.id, text, position }
   }).filter(Boolean)
+}
+
+// Every vertex carries its label's index: the line shader reads exactly the
+// same opacity buffer as the name, including the two separate Serpens figures.
+export function constellationLineData(features, labels, radius = 1) {
+  const positions = []
+  const figures = []
+  labels.forEach((label, index) => {
+    const points = constellationSegments([features[label.featureIndex]], radius)
+    for (const point of points) {
+      positions.push(...point)
+      figures.push(index)
+    }
+  })
+  return { positions: new Float32Array(positions), figures: new Float32Array(figures) }
 }
 
 // Reuse output/scratch arrays from the animation loop. Coordinates are CSS px;
@@ -61,5 +78,21 @@ export function selectConstellationLabels(candidates, viewportWidth, viewportHei
 
 export function constellationLabelOpacity(relativeZoom) {
   const progress = Math.min(1, Math.max(0, (relativeZoom - 6) / 14))
-  return 0.76 * (1 - progress * progress * (3 - 2 * progress))
+  return CONSTELLATION_LABEL_OPACITY * (1 - progress * progress * (3 - 2 * progress))
+}
+
+export function updateConstellationOpacities(candidates, selected, opacities, targetOpacity, delta) {
+  for (const candidate of candidates) candidate.selected = false
+  for (const candidate of selected) candidate.selected = true
+  const blend = 1 - Math.exp(-12 * delta)
+  let visible = false
+  for (const candidate of candidates) {
+    // Hide rejected figures immediately to keep the same strict overlap/count
+    // limit for names and lines. Only their entrance needs a gradual fade.
+    const value = candidate.selected
+      ? opacities[candidate.index] + (targetOpacity - opacities[candidate.index]) * blend : 0
+    opacities[candidate.index] = value
+    visible ||= value > 0.005
+  }
+  return visible
 }
